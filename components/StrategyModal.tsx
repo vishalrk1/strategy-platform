@@ -54,6 +54,7 @@ export function StrategyModal({ children }: StrategyModalProps) {
 
   const handleCreateStrategy = async () => {
     if (!selectedStrategy) return;
+    console.log(user)
     const hasValidCredentials = hasValidBrokerCredentials(user);
 
     if (!hasValidCredentials || !isValidToken(user?.fyersAccessToken)) {

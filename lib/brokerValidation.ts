@@ -1,6 +1,7 @@
 "use client";
 
 import { User } from "@/types/user";
+import { clearInvalidFyersTokens } from "./fyersApi";
 
 export function hasValidBrokerCredentials(user: User | null): boolean {
   if (!user) {
@@ -37,7 +38,7 @@ export function hasValidBrokerCredentials(user: User | null): boolean {
 export async function validateFyersToken(token: string): Promise<boolean> {
   try {
     const response = await fetch("/api/fyers/validate", {
-      method: "GET",
+      method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -49,6 +50,16 @@ export async function validateFyersToken(token: string): Promise<boolean> {
     }
 
     const data = await response.json();
+
+    // If validation fails due to authentication error, clear tokens
+    if (
+      !data.success &&
+      !data.isValid &&
+      data.message?.includes("authentication failed")
+    ) {
+      await clearInvalidFyersTokens(token);
+    }
+
     return data.success && data.isValid;
   } catch (error) {
     console.error("Error validating Fyers token:", error);
@@ -64,7 +75,7 @@ export async function validateFyersToken(token: string): Promise<boolean> {
  * @returns Promise<boolean> indicating whether the broker setup is fully valid
  */
 export async function validateBrokerSetup(
-  user: AuthUser | null,
+  user: User | null,
   verificationStatus?:
     | "checking"
     | "requires_credentials"
@@ -76,7 +87,7 @@ export async function validateBrokerSetup(
   authToken?: string
 ): Promise<boolean> {
   // First check basic credentials
-  if (!hasValidBrokerCredentials(user, verificationStatus)) {
+  if (!hasValidBrokerCredentials(user)) {
     return false;
   }
 

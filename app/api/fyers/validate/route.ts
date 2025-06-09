@@ -64,23 +64,48 @@ export async function POST(request: NextRequest) {
           message: "Fyers token is valid",
         });
       } else {
-        await usersCollection.updateOne(
-          { _id: new ObjectId(decoded._id) },
-          {
-            $unset: {
-              fyersAccessToken: "",
-              fyersRefreshToken: "",
-            },
-            $set: {
-              updatedAt: new Date(),
-            },
-          }
-        );
+        // Check if it's an authentication error
+        const isAuthError =
+          profileResult.code === -16 && profileResult.s === "error";
+
+        if (isAuthError) {
+          // Clear all Fyers tokens when authentication fails
+          await usersCollection.updateOne(
+            { _id: new ObjectId(decoded._id) },
+            {
+              $unset: {
+                fyersAccessToken: "",
+                fyersRefreshToken: "",
+                fyersAuthCode: "",
+              },
+              $set: {
+                updatedAt: new Date(),
+              },
+            }
+          );
+        } else {
+          // For other errors, only clear access and refresh tokens
+          await usersCollection.updateOne(
+            { _id: new ObjectId(decoded._id) },
+            {
+              $unset: {
+                fyersAccessToken: "",
+                fyersRefreshToken: "",
+              },
+              $set: {
+                updatedAt: new Date(),
+              },
+            }
+          );
+        }
+
         return NextResponse.json({
           success: false,
           is_valid: false,
           tokenValid: false,
-          message: "Fyers token is invalid or expired",
+          message: isAuthError
+            ? "Fyers authentication failed - tokens have been cleared"
+            : "Fyers token is invalid or expired",
         });
       }
     } catch (error) {

@@ -4,6 +4,8 @@ import { FyersFundsLimit, FyresResponse } from "@/types/fyres/types";
 import { User } from "@/types/user";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { clearInvalidFyersTokens, isFyersAuthError } from "@/lib/fyersApi";
+import { useAuthStore } from "./authStore";
 
 interface FyersState {
   clientId: string | null;
@@ -38,7 +40,6 @@ interface FyersState {
 export const useFyersStore = create<FyersState>()(
   persist(
     (set, get) => ({
-      // Initial state
       clientId: null,
       secretKey: null,
       authCode: null,
@@ -48,15 +49,12 @@ export const useFyersStore = create<FyersState>()(
       fund_limit: [],
       verificationStatus: "checking",
 
-      // Actions
       setCredentials: (clientId, secretKey) => {
         set({
           clientId,
           secretKey,
           verificationStatus: "requires_auth",
         });
-
-        // Also store in localStorage for backward compatibility
         if (typeof window !== "undefined") {
           localStorage.setItem("fyers_client_id", clientId);
           localStorage.setItem("fyers_secret_key", secretKey);
@@ -66,18 +64,29 @@ export const useFyersStore = create<FyersState>()(
       setFyersStoreData: (user) => {
         if (user) {
           set({
-            clientId: user.fyersClientId,
-            secretKey: user.fyersSecretKey,
-            authCode: user.fyersAuthCode,
-            accessToken: user.fyersAccessToken,
-            refreshToken: user.fyersRefreshToken,
+            clientId: user.fyersClientId || null,
+            secretKey: user.fyersSecretKey || null,
+            authCode: user.fyersAuthCode || null,
+            accessToken: user.fyersAccessToken || null,
+            refreshToken: user.fyersRefreshToken || null,
             isAuthorized: !!user.fyersAccessToken,
+            verificationStatus: user.fyersAccessToken
+              ? "success"
+              : user.fyersClientId && user.fyersSecretKey
+              ? "requires_auth"
+              : "requires_credentials",
           });
         }
       },
 
       getFundsLimit: async () => {
         try {
+          console.log(get().clientId, get().accessToken);
+          if (!get().clientId || !get().accessToken) {
+            console.warn("Client ID or access token is not set.");
+            return;
+          }
+
           const fundsResponse = await fetch(
             "https://api-t1.fyers.in/api/v3/funds",
             {
@@ -89,16 +98,85 @@ export const useFyersStore = create<FyersState>()(
           );
 
           const fundsResult: FyresResponse = await fundsResponse.json();
-          console.log("Fyers funds limit response:", fundsResult);
+
+          if (isFyersAuthError(fundsResult)) {
+            console.log(
+              "Token invalid, clearing tokens from database and local storage"
+            );
+            const authToken = useAuthStore.getState().token;
+            if (authToken) {
+              await clearInvalidFyersTokens(authToken);
+            }
+            set({
+              accessToken: null,
+              authCode: null,
+              refreshToken: null,
+              isAuthorized: false,
+              verificationStatus:
+                get().clientId && get().secretKey
+                  ? "requires_auth"
+                  : "requires_credentials",
+              fund_limit: [],
+            });
+            if (typeof window !== "undefined") {
+              localStorage.removeItem("fyers_access_token");
+              localStorage.removeItem("fyers_auth_code");
+              localStorage.removeItem("fyers_refresh_token");
+            }
+            useAuthStore.getState().logout();
+            return;
+          }
+
           if (fundsResult.code === 200 && fundsResult.s === "ok") {
             set({ fund_limit: fundsResult.fund_limit });
           } else {
             console.error("Failed to fetch Fyers funds limit:", fundsResult);
-            set({ fund_limit: [] });
+            const authToken = useAuthStore.getState().token;
+            if (authToken) {
+              await clearInvalidFyersTokens(authToken);
+            }
+            set({
+              accessToken: null,
+              authCode: null,
+              refreshToken: null,
+              isAuthorized: false,
+              verificationStatus:
+                get().clientId && get().secretKey
+                  ? "requires_auth"
+                  : "requires_credentials",
+              fund_limit: [],
+            });
+            if (typeof window !== "undefined") {
+              localStorage.removeItem("fyers_access_token");
+              localStorage.removeItem("fyers_auth_code");
+              localStorage.removeItem("fyers_refresh_token");
+            }
+            useAuthStore.getState().logout();
           }
         } catch (error) {
+          // On error, clear tokens and logout
           console.error("Error fetching Fyers funds limit:", error);
-          set({ fund_limit: [] });
+          const authToken = useAuthStore.getState().token;
+          if (authToken) {
+            await clearInvalidFyersTokens(authToken);
+          }
+          set({
+            accessToken: null,
+            authCode: null,
+            refreshToken: null,
+            isAuthorized: false,
+            verificationStatus:
+              get().clientId && get().secretKey
+                ? "requires_auth"
+                : "requires_credentials",
+            fund_limit: [],
+          });
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("fyers_access_token");
+            localStorage.removeItem("fyers_auth_code");
+            localStorage.removeItem("fyers_refresh_token");
+          }
+          useAuthStore.getState().logout();
         }
       },
 
@@ -191,7 +269,6 @@ export const useFyersStore = create<FyersState>()(
           updates.refreshToken = data.fyers_refresh_token;
         }
 
-        // Handle token validity
         if (data.hasOwnProperty("token_valid")) {
           if (!data.token_valid) {
             updates.accessToken = null;
@@ -249,11 +326,11 @@ export const useFyersStore = create<FyersState>()(
 
           const updates: Partial<FyersState> = {};
 
-          if (storedClientId) updates.clientId = storedClientId;
-          if (storedSecretKey) updates.secretKey = storedSecretKey;
-          if (storedAuthCode) updates.authCode = storedAuthCode;
-          if (storedAccessToken) updates.accessToken = storedAccessToken;
-          if (storedRefreshToken) updates.refreshToken = storedRefreshToken;
+          updates.clientId = storedClientId || null;
+          updates.secretKey = storedSecretKey || null;
+          updates.authCode = storedAuthCode || null;
+          updates.accessToken = storedAccessToken || null;
+          updates.refreshToken = storedRefreshToken || null;
 
           // Determine status and authorization
           if (storedAccessToken) {

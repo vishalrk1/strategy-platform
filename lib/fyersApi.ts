@@ -1,4 +1,5 @@
-import { FyersCredentials, FyersAuthResponse } from '@/types/user';
+import { FyresResponse } from "@/types/fyres/types";
+import { FyersCredentials, FyersAuthResponse } from "@/types/user";
 
 export function generateAuthCodeURL(clientId: string): string {
   if (!clientId) {
@@ -17,7 +18,7 @@ export function generateAuthCodeURL(clientId: string): string {
 }
 
 export async function getFyersData(token: string) {
-  const response = await fetch('/api/fyers/credentials', {
+  const response = await fetch("/api/fyers/credentials", {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -29,14 +30,17 @@ export async function getFyersData(token: string) {
     throw new Error("Failed to fetch Fyers credentials");
   }
 
-  return await response.json() as any;
+  return (await response.json()) as any;
 }
 
-export async function updateFyersCredentials(token: string, credentials: FyersCredentials): Promise<FyersAuthResponse> {
+export async function updateFyersCredentials(
+  token: string,
+  credentials: FyersCredentials
+): Promise<FyersAuthResponse> {
   const encodedClientId = btoa(credentials.fyersClientId);
   const encodedSecretKey = btoa(credentials.fyersSecretKey);
-  
-  const response = await fetch('/api/fyers/credentials', {
+
+  const response = await fetch("/api/fyers/credentials", {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -52,11 +56,14 @@ export async function updateFyersCredentials(token: string, credentials: FyersCr
     throw new Error("Failed to update credentials");
   }
 
-  return await response.json() as FyersAuthResponse;
+  return (await response.json()) as FyersAuthResponse;
 }
 
-export async function updateFyersToken(token: string, authCode: string): Promise<FyersAuthResponse> {
-  const response = await fetch('/api/fyers/credentials', {
+export async function updateFyersToken(
+  token: string,
+  authCode: string
+): Promise<FyersAuthResponse> {
+  const response = await fetch("/api/fyers/credentials", {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -71,12 +78,14 @@ export async function updateFyersToken(token: string, authCode: string): Promise
     throw new Error("Failed to update Fyers token");
   }
 
-  const result = await response.json() as FyersAuthResponse;
+  const result = (await response.json()) as FyersAuthResponse;
   return result;
 }
 
-export async function validateFyersToken(token: string): Promise<FyersAuthResponse> {
-  const response = await fetch('/api/fyers/validate', {
+export async function validateFyersToken(
+  token: string
+): Promise<FyersAuthResponse> {
+  const response = await fetch("/api/fyers/validate", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -88,22 +97,26 @@ export async function validateFyersToken(token: string): Promise<FyersAuthRespon
     throw new Error("Failed to validate Fyers token");
   }
 
-  return await response.json() as FyersAuthResponse;
+  return (await response.json()) as FyersAuthResponse;
 }
 
 export async function initializeFyersApi(): Promise<boolean> {
-  if (typeof window === 'undefined') return false;
-  
-  const clientId = localStorage.getItem('fyers_client_id');
-  const secretKey = localStorage.getItem('fyers_secret_key');
-  const authCode = localStorage.getItem('fyers_auth_code');
-  const accessToken = localStorage.getItem('fyers_access_token');
-  
+  if (typeof window === "undefined") return false;
+
+  const clientId = localStorage.getItem("fyers_client_id");
+  const secretKey = localStorage.getItem("fyers_secret_key");
+  const authCode = localStorage.getItem("fyers_auth_code");
+  const accessToken = localStorage.getItem("fyers_access_token");
+
   return !!(clientId && secretKey && (authCode || accessToken));
 }
 
-export function getFyersCredentialsFromBackend(backendData: unknown): { clientId: string | null; secretKey: string | null } {
-  if (!backendData || typeof backendData !== 'object') return { clientId: null, secretKey: null };
+export function getFyersCredentialsFromBackend(backendData: unknown): {
+  clientId: string | null;
+  secretKey: string | null;
+} {
+  if (!backendData || typeof backendData !== "object")
+    return { clientId: null, secretKey: null };
 
   const data = backendData as Record<string, unknown>;
   return {
@@ -122,7 +135,35 @@ export function decodeSecureData(encodedData: string): string {
   try {
     return atob(encodedData);
   } catch (error) {
-    console.error('Failed to decode data:', error);
-    return '';
+    console.error("Failed to decode data:", error);
+    return "";
   }
+}
+
+// Reusable function to clear invalid Fyers tokens
+export async function clearInvalidFyersTokens(
+  authToken: string
+): Promise<boolean> {
+  try {
+    const response = await fetch("/api/fyers/clear-tokens", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      return result.success;
+    }
+    return false;
+  } catch (error) {
+    console.error("Error clearing invalid Fyers tokens:", error);
+    return false;
+  }
+}
+
+export function isFyersAuthError(response: FyresResponse): boolean {
+  return response && response.code === -16 && response.s === "error";
 }
