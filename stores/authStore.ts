@@ -11,7 +11,6 @@ import {
 import { useFyersStore } from "./fyersStore";
 
 interface AuthState {
-  // State
   user: User | null;
   token: string | null;
   isLoading: boolean;
@@ -53,7 +52,6 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       fyersVerificationStatus: "checking",
 
-      // Actions
       setUser: (user) => {
         if (user) {
           useFyersStore.getState().setFyersStoreData(user);
@@ -69,7 +67,6 @@ export const useAuthStore = create<AuthState>()(
         if (typeof window !== "undefined") {
           if (token) {
             localStorage.setItem("token", token);
-            // Also set cookie for server-side middleware
             document.cookie = `token=${token}; path=/; max-age=${
               30 * 24 * 60 * 60
             }; SameSite=strict`;
@@ -84,17 +81,12 @@ export const useAuthStore = create<AuthState>()(
 
       setLoading: (isLoading) => set({ isLoading }),
 
-      // Fyers-specific actions
       updateUserFyersData: (fyersData) => {
         const currentUser = get().user;
         if (currentUser) {
           const updatedUser = { ...currentUser, ...fyersData };
           set({ user: updatedUser });
-
-          // Sync with fyersStore to ensure consistency
           const fyersStore = useFyersStore.getState();
-
-          // Only update fyersStore with properties that are actually present in fyersData
           if (fyersData.fyersClientId) {
             fyersStore.setCredentials(
               fyersData.fyersClientId,
@@ -200,8 +192,6 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        get().clearAuth();
-        // Also clear Fyers data on logout
         if (typeof window !== "undefined") {
           localStorage.removeItem("fyers_client_id");
           localStorage.removeItem("fyers_secret_key");
@@ -225,8 +215,6 @@ export const useAuthStore = create<AuthState>()(
           });
 
           const data = await response.json();
-
-          // Check if the response indicates the user is not verified
           if (!data.success && data.message?.includes("not verified")) {
             get().setUser(data.user || null);
             get().setToken(tokenToVerify);
