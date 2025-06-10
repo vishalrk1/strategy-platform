@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
+import { useFyersStore } from "@/stores/fyersStore"; // Add this import
 import { User } from "@/types/user";
 import { FyersCredentialsForm } from "@/components/FyersCredentialsForm";
 import {
@@ -12,6 +13,7 @@ import {
   validateFyersToken,
   encodeSecureData,
 } from "@/lib/fyersApi";
+import { fyresCredentials } from "@/types/fyres/types";
 
 export default function FyersVerification() {
   const router = useRouter();
@@ -37,6 +39,7 @@ export default function FyersVerification() {
     };
     initializeStores();
   }, [initialize]);
+
   const updateFyersTokenInBackend = useCallback(
     async (authCode: string) => {
       try {
@@ -70,15 +73,20 @@ export default function FyersVerification() {
           return;
         }
 
+        // Update Fyers data in authStore (which will now also sync with fyersStore)
         updateUserFyersData({
           fyersAccessToken: response.accessToken,
           fyersRefreshToken: response.refreshToken || undefined,
+          fyersAuthCode: authCode, // Make sure to also store the auth code
         });
 
         setError("");
         setFyersVerificationStatus("success");
 
         await refreshUserFromBackend();
+
+        // Also update the fyersStore verification status to ensure UI consistency
+        useFyersStore.getState().setVerificationStatus("success");
 
         setTimeout(() => {
           router.push("/dashboard");
@@ -152,58 +160,101 @@ export default function FyersVerification() {
         return;
       }
 
-      const data = await getFyersData(token);
+      const data: fyresCredentials = await getFyersData(token);
       const updatedData: Partial<User> = {};
 
       if (data.fyers_client_id) {
         try {
           updatedData.fyersClientId = atob(data.fyers_client_id);
-        } catch {
+        } catch (e) {
+          console.warn("Failed to decode client ID:", e);
           updatedData.fyersClientId = data.fyers_client_id;
         }
       }
+
       if (data.fyers_secret_key) {
         try {
           updatedData.fyersSecretKey = atob(data.fyers_secret_key);
-        } catch {
+        } catch (e) {
+          console.warn("Failed to decode secret key:", e);
           updatedData.fyersSecretKey = data.fyers_secret_key;
         }
       }
+
       if (data.fyers_access_token) {
         updatedData.fyersAccessToken = data.fyers_access_token;
       }
+
       if (data.fyers_refresh_token) {
         updatedData.fyersRefreshToken = data.fyers_refresh_token;
       }
 
+      // Auth code from local storage if available - fix type issue
+      const storedAuthCode = localStorage.getItem("fyers_auth_code");
+      if (storedAuthCode && typeof storedAuthCode === "string") {
+        updatedData.fyersAuthCode = storedAuthCode;
+      }
+
+      // Update user data in AuthStore
       updateUserFyersData(updatedData);
 
+      // Also directly update FyersStore to ensure consistency
+      const fyersStore = useFyersStore.getState();
+
+      if (updatedData.fyersClientId && updatedData.fyersSecretKey) {
+        // Make sure we're passing strings to setCredentials
+        fyersStore.setCredentials(
+          String(updatedData.fyersClientId),
+          String(updatedData.fyersSecretKey)
+        );
+      }
+
+      if (updatedData.fyersAccessToken) {
+        fyersStore.setAccessToken(String(updatedData.fyersAccessToken));
+      }
+
+      if (
+        updatedData.fyersRefreshToken &&
+        typeof updatedData.fyersRefreshToken === "string"
+      ) {
+        fyersStore.setRefreshToken(updatedData.fyersRefreshToken);
+      }
+
+      // Determine verification status based on the response
       if (data.hasOwnProperty("token_valid") && !data.token_valid) {
         if (data.fyers_client_id && data.fyers_secret_key) {
           setHasCredentialsNotVerified(true);
-          setFyersVerificationStatus("requires_auth");
+          const newStatus = "requires_auth";
+          setFyersVerificationStatus(newStatus);
+          fyersStore.setVerificationStatus(newStatus);
         } else {
-          setFyersVerificationStatus("requires_credentials");
-        }
-
-        if (data.message) {
-          setError(data.message);
+          const newStatus = "requires_credentials";
+          setFyersVerificationStatus(newStatus);
+          fyersStore.setVerificationStatus(newStatus);
         }
       } else if (data.fyers_client_id && data.fyers_secret_key) {
         if (data.fyers_access_token) {
-          setFyersVerificationStatus("success");
+          const newStatus = "success";
+          setFyersVerificationStatus(newStatus);
+          fyersStore.setVerificationStatus(newStatus);
           setTimeout(() => router.push("/dashboard"), 1500);
         } else {
           setHasCredentialsNotVerified(true);
-          setFyersVerificationStatus("requires_auth");
+          const newStatus = "requires_auth";
+          setFyersVerificationStatus(newStatus);
+          fyersStore.setVerificationStatus(newStatus);
         }
       } else {
-        setFyersVerificationStatus("requires_credentials");
+        const newStatus = "requires_credentials";
+        setFyersVerificationStatus(newStatus);
+        fyersStore.setVerificationStatus(newStatus);
       }
     } catch (err) {
       console.error("Error fetching Fyers credentials:", err);
       setError("Failed to fetch Fyers credentials. Please try again.");
-      setFyersVerificationStatus("failed");
+      const failedStatus = "failed";
+      setFyersVerificationStatus(failedStatus);
+      useFyersStore.getState().setVerificationStatus(failedStatus);
     } finally {
       setLoading(false);
     }

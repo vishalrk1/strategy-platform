@@ -1,5 +1,6 @@
-import { FyresResponse } from "@/types/fyres/types";
-import { FyersCredentials, FyersAuthResponse } from "@/types/user";
+import { useAuthStore } from "@/stores/authStore";
+import { fyresCredentials, FyresResponse } from "@/types/fyres/types";
+import { FyersCredentials, FyersAuthResponse, User } from "@/types/user";
 
 export function generateAuthCodeURL(clientId: string): string {
   if (!clientId) {
@@ -17,7 +18,7 @@ export function generateAuthCodeURL(clientId: string): string {
   }
 }
 
-export async function getFyersData(token: string) {
+export async function getFyersData(token: string) : Promise<fyresCredentials> {
   const response = await fetch("/api/fyers/credentials", {
     method: "GET",
     headers: {
@@ -30,7 +31,12 @@ export async function getFyersData(token: string) {
     throw new Error("Failed to fetch Fyers credentials");
   }
 
-  return (await response.json()) as any;
+  const res: fyresCredentials = await response.json();
+  if (!res.success) {
+    throw new Error("Failed to fetch Fyers credentials");
+  }
+
+  return res;
 }
 
 export async function updateFyersCredentials(
@@ -141,26 +147,40 @@ export function decodeSecureData(encodedData: string): string {
 }
 
 // Reusable function to clear invalid Fyers tokens
-export async function clearInvalidFyersTokens(
-  authToken: string
-): Promise<boolean> {
+export async function clearInvalidFyersTokens(): Promise<{
+  success: boolean;
+  user?: User;
+}> {
   try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("No authentication token found");
+      return { success: false };
+    }
+
     const response = await fetch("/api/fyers/clear-tokens", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${authToken}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     });
 
     if (response.ok) {
       const result = await response.json();
-      return result.success;
+      if (result.user) {
+        useAuthStore.getState().setUser(result.user);
+      }
+
+      return {
+        success: result.success,
+        user: result.user,
+      };
     }
-    return false;
+    return { success: false };
   } catch (error) {
     console.error("Error clearing invalid Fyers tokens:", error);
-    return false;
+    return { success: false };
   }
 }
 

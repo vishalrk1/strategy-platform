@@ -20,8 +20,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Settings, AlertCircle, CheckCircle } from "lucide-react";
-import { useAuthStore } from "@/lib/store";
 import { generateAuthCodeURL } from "@/lib/fyersApi";
+import { useAuthStore } from "@/stores/authStore";
 
 interface BrokerSettingsModalProps {
   children?: React.ReactNode;

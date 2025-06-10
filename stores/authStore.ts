@@ -90,6 +90,29 @@ export const useAuthStore = create<AuthState>()(
         if (currentUser) {
           const updatedUser = { ...currentUser, ...fyersData };
           set({ user: updatedUser });
+
+          // Sync with fyersStore to ensure consistency
+          const fyersStore = useFyersStore.getState();
+
+          // Only update fyersStore with properties that are actually present in fyersData
+          if (fyersData.fyersClientId) {
+            fyersStore.setCredentials(
+              fyersData.fyersClientId,
+              fyersData.fyersSecretKey || currentUser.fyersSecretKey || ""
+            );
+          }
+
+          if (fyersData.fyersAuthCode) {
+            fyersStore.setAuthCode(fyersData.fyersAuthCode);
+          }
+
+          if (fyersData.fyersAccessToken) {
+            fyersStore.setAccessToken(fyersData.fyersAccessToken);
+          }
+
+          if (fyersData.fyersRefreshToken) {
+            fyersStore.setRefreshToken(fyersData.fyersRefreshToken);
+          }
         }
       },
 

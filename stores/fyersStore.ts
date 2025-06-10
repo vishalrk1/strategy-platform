@@ -84,6 +84,17 @@ export const useFyersStore = create<FyersState>()(
           console.log(get().clientId, get().accessToken);
           if (!get().clientId || !get().accessToken) {
             console.warn("Client ID or access token is not set.");
+            set({
+                accessToken: null,
+                authCode: null,
+                refreshToken: null,
+                isAuthorized: false,
+                verificationStatus:
+                  get().clientId && get().secretKey
+                    ? "requires_auth"
+                    : "requires_credentials",
+                fund_limit: [],
+              });
             return;
           }
 
@@ -98,85 +109,43 @@ export const useFyersStore = create<FyersState>()(
           );
 
           const fundsResult: FyresResponse = await fundsResponse.json();
-
           if (isFyersAuthError(fundsResult)) {
             console.log(
               "Token invalid, clearing tokens from database and local storage"
             );
-            const authToken = useAuthStore.getState().token;
-            if (authToken) {
-              await clearInvalidFyersTokens(authToken);
+            const result = await clearInvalidFyersTokens();
+            if (result.success && result.user) {
+              useAuthStore.getState().setUser(result.user);
+            } else {
+              set({
+                accessToken: null,
+                authCode: null,
+                refreshToken: null,
+                isAuthorized: false,
+                verificationStatus:
+                  get().clientId && get().secretKey
+                    ? "requires_auth"
+                    : "requires_credentials",
+                fund_limit: [],
+              });
+              if (typeof window !== "undefined") {
+                localStorage.removeItem("fyers_access_token");
+                localStorage.removeItem("fyers_auth_code");
+                localStorage.removeItem("fyers_refresh_token");
+              }
             }
-            set({
-              accessToken: null,
-              authCode: null,
-              refreshToken: null,
-              isAuthorized: false,
-              verificationStatus:
-                get().clientId && get().secretKey
-                  ? "requires_auth"
-                  : "requires_credentials",
-              fund_limit: [],
-            });
-            if (typeof window !== "undefined") {
-              localStorage.removeItem("fyers_access_token");
-              localStorage.removeItem("fyers_auth_code");
-              localStorage.removeItem("fyers_refresh_token");
-            }
-            useAuthStore.getState().logout();
             return;
           }
 
           if (fundsResult.code === 200 && fundsResult.s === "ok") {
             set({ fund_limit: fundsResult.fund_limit });
-          } else {
-            console.error("Failed to fetch Fyers funds limit:", fundsResult);
-            const authToken = useAuthStore.getState().token;
-            if (authToken) {
-              await clearInvalidFyersTokens(authToken);
-            }
-            set({
-              accessToken: null,
-              authCode: null,
-              refreshToken: null,
-              isAuthorized: false,
-              verificationStatus:
-                get().clientId && get().secretKey
-                  ? "requires_auth"
-                  : "requires_credentials",
-              fund_limit: [],
-            });
-            if (typeof window !== "undefined") {
-              localStorage.removeItem("fyers_access_token");
-              localStorage.removeItem("fyers_auth_code");
-              localStorage.removeItem("fyers_refresh_token");
-            }
-            useAuthStore.getState().logout();
           }
         } catch (error) {
-          // On error, clear tokens and logout
           console.error("Error fetching Fyers funds limit:", error);
-          const authToken = useAuthStore.getState().token;
-          if (authToken) {
-            await clearInvalidFyersTokens(authToken);
-          }
           set({
-            accessToken: null,
-            authCode: null,
-            refreshToken: null,
-            isAuthorized: false,
-            verificationStatus:
-              get().clientId && get().secretKey
-                ? "requires_auth"
-                : "requires_credentials",
             fund_limit: [],
+            verificationStatus: "failed",
           });
-          if (typeof window !== "undefined") {
-            localStorage.removeItem("fyers_access_token");
-            localStorage.removeItem("fyers_auth_code");
-            localStorage.removeItem("fyers_refresh_token");
-          }
-          useAuthStore.getState().logout();
         }
       },
 

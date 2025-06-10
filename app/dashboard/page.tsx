@@ -7,12 +7,14 @@ import { StrategyModal } from "@/components/StrategyModal";
 import { BrokerSettingsModal } from "@/components/BrokerSettingsModal";
 import { useAuthStore } from "@/stores/authStore";
 import { useFyersStore } from "@/stores/fyersStore";
+import { formatCurrency, getFundsDetails } from "./utils/dashboardUtils";
 
 export default function Dashboard() {
   const { user } = useAuthStore();
   const { getFundsLimit, fund_limit } = useFyersStore();
 
   useEffect(() => {
+    console.log(user);
     const fetchFundsLimit = async () => {
       try {
         await getFundsLimit();
@@ -21,47 +23,14 @@ export default function Dashboard() {
       }
     };
 
-    if (!user) {
+    if (user) {
       fetchFundsLimit();
     }
   }, [user, getFundsLimit]);
 
-  // Process fund_limit data outside of the return statement
   const fundData = useMemo(() => {
-    if (!fund_limit || fund_limit.length === 0) return null;
-
-    const totalBalance =
-      fund_limit.find((item) => item.title === "Total Balance")?.equityAmount ||
-      0;
-    const usedAmount =
-      fund_limit.find((item) => item.title === "Utilized Amount")
-        ?.equityAmount || 0;
-    const availableBalance =
-      fund_limit.find((item) => item.title === "Available Balance")
-        ?.equityAmount || 0;
-
-    // Calculate percentage for progress bar
-    const usedPercentage =
-      totalBalance > 0 ? (usedAmount / totalBalance) * 100 : 0;
-    const availablePercentage = 100 - usedPercentage;
-
-    return {
-      totalBalance,
-      usedAmount,
-      availableBalance,
-      usedPercentage,
-      availablePercentage,
-    };
+    return getFundsDetails(fund_limit);
   }, [fund_limit]);
-
-  // Currency formatter function
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 2,
-    }).format(amount);
-  };
 
   return (
     <ProtectedRoute>

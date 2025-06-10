@@ -30,11 +30,6 @@ export function hasValidBrokerCredentials(user: User | null): boolean {
   }
 }
 
-/**
- * Validates Fyers token by making an API call
- * @param token - The authentication token for API calls
- * @returns Promise<boolean> indicating if the Fyers token is valid
- */
 export async function validateFyersToken(token: string): Promise<boolean> {
   try {
     const response = await fetch("/api/fyers/validate", {
@@ -57,7 +52,8 @@ export async function validateFyersToken(token: string): Promise<boolean> {
       !data.isValid &&
       data.message?.includes("authentication failed")
     ) {
-      await clearInvalidFyersTokens(token);
+      await clearInvalidFyersTokens();
+      return false;
     }
 
     return data.success && data.isValid;

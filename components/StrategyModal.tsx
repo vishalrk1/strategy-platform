@@ -19,9 +19,9 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { BarChart3 } from "lucide-react";
-import { useAuthStore } from "@/lib/store";
 import { hasValidBrokerCredentials } from "@/lib/brokerValidation";
 import { BrokerSettingsModal } from "@/components/BrokerSettingsModal";
+import { useAuthStore } from "@/stores/authStore";
 
 interface StrategyModalProps {
   children?: React.ReactNode;
@@ -45,7 +45,6 @@ export function StrategyModal({ children }: StrategyModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showBrokerSettings, setShowBrokerSettings] = useState(false);
-
   const { user } = useAuthStore();
 
   const isValidToken = (accessToken: string | null | undefined): boolean => {
@@ -54,10 +53,14 @@ export function StrategyModal({ children }: StrategyModalProps) {
 
   const handleCreateStrategy = async () => {
     if (!selectedStrategy) return;
-    console.log(user)
-    const hasValidCredentials = hasValidBrokerCredentials(user);
 
-    if (!hasValidCredentials || !isValidToken(user?.fyersAccessToken)) {
+    const hasValidCredentials = hasValidBrokerCredentials(user);
+    const hasValidToken = isValidToken(user?.fyersAccessToken);
+
+    if (!hasValidCredentials || !hasValidToken) {
+      console.log(
+        "Invalid broker credentials or token, opening broker settings"
+      );
       setIsOpen(false);
       setShowBrokerSettings(true);
       return;
