@@ -8,13 +8,18 @@ import { BrokerSettingsModal } from "@/components/BrokerSettingsModal";
 import { useAuthStore } from "@/stores/authStore";
 import { useFyersStore } from "@/stores/fyersStore";
 import { formatCurrency, getFundsDetails } from "./utils/dashboardUtils";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { useHoldingsStore } from "@/stores/holdingsStore";
+import { Badge } from "@/components/ui/badge";
 
 export default function Dashboard() {
   const { user } = useAuthStore();
   const { getFundsLimit, fund_limit } = useFyersStore();
+  const { fetchHoldings, overall } = useHoldingsStore();
 
   useEffect(() => {
-    console.log(user);
     const fetchFundsLimit = async () => {
       try {
         await getFundsLimit();
@@ -25,90 +30,126 @@ export default function Dashboard() {
 
     if (user) {
       fetchFundsLimit();
+      fetchHoldings();
     }
-  }, [user, getFundsLimit]);
+  }, [user, getFundsLimit, fetchHoldings]);
 
   const fundData = useMemo(() => {
     return getFundsDetails(fund_limit);
   }, [fund_limit]);
 
+  console.log(overall);
+
   return (
     <ProtectedRoute>
-      <div className="min-h-screen">
-        <main className="max-w-7xl mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
-          <div className="px-2 sm:px-0">
-            <div className="p-2">
-              <div className="text-left">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
-                  Welcome to your Dashboard
-                </h1>
-                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-                  Monitor your trading strategies and portfolio performance in
-                  real-time.
-                </p>
-              </div>
+      <main className="max-w-[90%] mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between px-6 py-4 rounded-md">
+          <div className="w-full flex items-center justify-between space-x-6">
+            <div className="flex items-center space-x-2">
+              <h1 className="text-3xl font-bold text-accent-foreground">
+                Portfolio
+              </h1>
+              {user && (
+                <Badge className="text-lg" variant="secondary">
+                  {user?.dataProvider}
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center justify-center gap-4">
+              <StrategyModal>
+                <Button
+                  variant="outline"
+                  className="bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 hover:border-blue-400 dark:hover:border-blue-600"
+                >
+                  <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <span className="ml-2">Create New Strategy</span>
+                </Button>
+              </StrategyModal>
+              <BrokerSettingsModal>
+                <Button
+                  variant="outline"
+                  className="bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-600"
+                >
+                  <Settings className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  <span className="ml-2">Account Settings</span>
+                </Button>
+              </BrokerSettingsModal>
             </div>
           </div>
-          <div className="rounded-lg mt-3 sm:my-2.5">
-            <div className="py-3 sm:py-5 px-2 sm:px-6">
-              {fundData && (
-                <div className="mb-2 sm:mb-3 rounded-lg sm:p-3">
-                  <h3 className="text-xl sm:text-2xl font-medium text-gray-900 dark:text-white mb-2">
-                    Funds Overview
-                  </h3>
-                  <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0 mb-1.5 mt-2 sm:mt-4">
-                    <span className="text-base sm:text-lg font-medium text-gray-700 dark:text-gray-300">
-                      Total: {formatCurrency(fundData.totalBalance)}
-                    </span>
-                    <span className="text-base sm:text-lg font-medium text-gray-700 dark:text-gray-300">
-                      Used: {formatCurrency(fundData.usedAmount)} | Available:{" "}
-                      {formatCurrency(fundData.availableBalance)}
-                    </span>
+        </div>
+        <Card className="mb-6 border-none shadow-xs bg-accent/30 p-0">
+          <CardHeader className="flex items-center bg-gradient-to-r from-green-300/20 to-accent/30 mx-4 my-3 rounded-lg">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center p-2">
+                <div className="flex flex-col items-start">
+                  <div className="text-muted-foreground text-lg">Total PnL</div>
+                  <div className="text-green-500 font-semibold text-lg">
+                    {overall ? formatCurrency(overall?.total_pl) : "Loading..."}
                   </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-lg h-8 sm:h-10 overflow-hidden mt-2">
-                    <div className="flex h-full">
-                      <div
-                        className="bg-red-500 h-full"
-                        style={{ width: `${fundData.usedPercentage}%` }}
-                        title={`Used: ${formatCurrency(fundData.usedAmount)}`}
-                      ></div>
-                      <div
-                        className="bg-green-500 h-full"
-                        style={{ width: `${fundData.availablePercentage}%` }}
-                        title={`Available: ${formatCurrency(
-                          fundData.availableBalance
-                        )}`}
-                      ></div>
+                </div>
+                <div className="ml-4 md:ml-16 flex items-center justify-around space-x-6 h-full">
+                  <div className="flex flex-col items-start">
+                    <div className="text-muted-foreground text-lg">
+                      Realised
+                    </div>
+                    <div className="text-green-500 font-semibold text-lg">
+                      {fundData
+                        ? formatCurrency(fundData.totalBalance)
+                        : "Loading..."}
+                    </div>
+                  </div>
+                  <Separator
+                    orientation="vertical"
+                    className="bg-white/50 dark:bg-white/20 border-2 h-full"
+                  />
+                  <div className="flex flex-col items-start">
+                    <div className="text-muted-foreground text-lg">
+                      Unrealised
+                    </div>
+                    <div className="text-green-500 font-semibold text-lg">
+                      {fundData
+                        ? formatCurrency(fundData.totalBalance)
+                        : "Loading..."}
                     </div>
                   </div>
                 </div>
-              )}
+              </div>
               <div>
-                <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 mt-4">
-                  <BrokerSettingsModal>
-                    <StrategyModal>
-                      <button className="relative block w-full bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-300 dark:border-blue-700 border-dashed rounded-lg p-6 text-center hover:border-blue-400 dark:hover:border-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <BarChart3 className="mx-auto h-8 w-8 text-blue-600 dark:text-blue-400" />
-                        <span className="mt-2 block text-sm font-medium text-blue-600 dark:text-blue-400">
-                          Create New Strategy
-                        </span>
-                      </button>
-                    </StrategyModal>
-                  </BrokerSettingsModal>
-                  <BrokerSettingsModal>
-                    <button className="relative block w-full bg-purple-50 dark:bg-purple-900/20 border-2 border-purple-300 dark:border-purple-700 border-dashed rounded-lg p-6 text-center hover:border-purple-400 dark:hover:border-purple-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
-                      <Settings className="mx-auto h-8 w-8 text-purple-600 dark:text-purple-400" />
-                      <span className="mt-2 block text-sm font-medium text-purple-600 dark:text-purple-400">
-                        Account Settings
-                      </span>
-                    </button>
-                  </BrokerSettingsModal>
+                <div className="flex flex-col items-start space-y-2">
+                  <div className="flex items-center space-x-2 mr-8">
+                    <span className="text-muted-foreground text-sm">
+                      Funds Available:
+                    </span>
+                    <span className="font-semibold text-sm">
+                      {fundData
+                        ? formatCurrency(fundData.totalBalance) //(fundData.usedPercentage * 100).toFixed(2)
+                        : 0}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1 flex overflow-hidden">
+                    <div
+                      className="bg-green-500 h-1"
+                      style={{
+                        width: fundData
+                          ? `${fundData.availablePercentage}%`
+                          : "100%",
+                      }}
+                    ></div>
+                    <div
+                      className="bg-red-500 h-1"
+                      style={{
+                        width: fundData
+                          ? `${fundData.usedPercentage * 100}%`
+                          : "0%",
+                      }}
+                    ></div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </main>
-      </div>
+          </CardHeader>
+        </Card>
+      </main>
     </ProtectedRoute>
   );
 }

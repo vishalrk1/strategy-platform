@@ -21,3 +21,35 @@ export interface fyresCredentials {
   token_valid: boolean;
   [key: string]: string | boolean | null | undefined;
 }
+
+export interface FyresHolding {
+  holdingType: string;
+  quantity: number;
+  costPrice: number;
+  marketVal: number;
+  remainingQuantity: number;
+  pl: number;
+  ltp: number;
+  id: number;
+  fyToken: number;
+  exchange: number;
+  symbol: string;
+  segment: number;
+  isin: string;
+  qty_t1: number;
+  remainingPledgeQuantity: number;
+  collateralQuantity: number;
+}
+
+export interface FyresHoldingsOverall {
+  count_total: number;
+  total_investment: number;
+  total_current_value: number;
+  total_pl: number;
+  pnl_perc: number;
+}
+
+export interface FyresHoldingsResponse extends FyresResponse {
+  holdings: FyresHolding[];
+  overall: FyresHoldingsOverall;
+}

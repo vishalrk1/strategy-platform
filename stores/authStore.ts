@@ -190,14 +190,16 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false });
         }
       },
-
       logout: () => {
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("fyers_client_id");
-          localStorage.removeItem("fyers_secret_key");
-          localStorage.removeItem("fyers_auth_code");
-          localStorage.removeItem("fyers_access_token");
-        }
+        // Clear auth state
+        get().clearAuth();
+
+        // Clear Fyers store data
+        const fyersStore = useFyersStore.getState();
+        fyersStore.clearFyersData();
+
+        // Reset verification status
+        set({ fyersVerificationStatus: "checking" });
       },
 
       verifyToken: async (token) => {
