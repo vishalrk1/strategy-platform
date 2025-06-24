@@ -11,13 +11,13 @@ import { formatCurrency, getFundsDetails } from "./utils/dashboardUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { useHoldingsStore } from "@/stores/holdingsStore";
 import { Badge } from "@/components/ui/badge";
+import { usePositionsStore } from "@/stores/positionsStore";
 
 export default function Dashboard() {
   const { user } = useAuthStore();
   const { getFundsLimit, fund_limit } = useFyersStore();
-  const { fetchHoldings, overall } = useHoldingsStore();
+  const { fetchPositions, overall: overallPositions } = usePositionsStore();
 
   useEffect(() => {
     const fetchFundsLimit = async () => {
@@ -30,15 +30,15 @@ export default function Dashboard() {
 
     if (user) {
       fetchFundsLimit();
-      fetchHoldings();
+      fetchPositions();
     }
-  }, [user, getFundsLimit, fetchHoldings]);
+  }, [user, getFundsLimit, fetchPositions]);
 
   const fundData = useMemo(() => {
     return getFundsDetails(fund_limit);
   }, [fund_limit]);
 
-  console.log(overall);
+  console.log(overallPositions);
 
   return (
     <ProtectedRoute>
@@ -82,19 +82,37 @@ export default function Dashboard() {
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center p-2">
                 <div className="flex flex-col items-start">
-                  <div className="text-muted-foreground text-lg">Total PnL</div>
-                  <div className="text-green-500 font-semibold text-lg">
-                    {overall ? formatCurrency(overall?.total_pl) : "Loading..."}
+                  <div className="text-muted-foreground text-lg">Total P&L</div>
+                  <div
+                    className={`text-lg ${
+                      overallPositions
+                        ? overallPositions.pl_total >= 0
+                          ? "text-green-700"
+                          : "text-red-700"
+                        : "text-green-700"
+                    }`}
+                  >
+                    {overallPositions
+                      ? formatCurrency(overallPositions.pl_total)
+                      : "Loading..."}
                   </div>
                 </div>
                 <div className="ml-4 md:ml-16 flex items-center justify-around space-x-6 h-full">
-                  <div className="flex flex-col items-start">
+                  <div className="flex flex-col items-center justify-center">
                     <div className="text-muted-foreground text-lg">
-                      Realised
+                      Realised P&L
                     </div>
-                    <div className="text-green-500 font-semibold text-lg">
-                      {fundData
-                        ? formatCurrency(fundData.totalBalance)
+                    <div
+                      className={`text-lg ${
+                        overallPositions
+                          ? overallPositions.pl_realized >= 0
+                            ? "text-green-700"
+                            : "text-red-700"
+                          : "text-green-700"
+                      }`}
+                    >
+                      {overallPositions
+                        ? formatCurrency(overallPositions.pl_realized)
                         : "Loading..."}
                     </div>
                   </div>
@@ -102,13 +120,21 @@ export default function Dashboard() {
                     orientation="vertical"
                     className="bg-white/50 dark:bg-white/20 border-2 h-full"
                   />
-                  <div className="flex flex-col items-start">
+                  <div className="flex flex-col items-center justify-center">
                     <div className="text-muted-foreground text-lg">
-                      Unrealised
+                      Unrealised P&L
                     </div>
-                    <div className="text-green-500 font-semibold text-lg">
-                      {fundData
-                        ? formatCurrency(fundData.totalBalance)
+                    <div
+                      className={`text-lg ${
+                        overallPositions
+                          ? overallPositions.pl_unrealized >= 0
+                            ? "text-green-700"
+                            : "text-red-700"
+                          : "text-green-700"
+                      }`}
+                    >
+                      {overallPositions
+                        ? formatCurrency(overallPositions.pl_unrealized)
                         : "Loading..."}
                     </div>
                   </div>

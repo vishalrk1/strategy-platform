@@ -53,3 +53,48 @@ export interface FyresHoldingsResponse extends FyresResponse {
   holdings: FyresHolding[];
   overall: FyresHoldingsOverall;
 }
+
+export interface FyresPosition {
+  netQty: number;
+  qty: number;
+  avgPrice: number;
+  netAvg: number;
+  side: number;
+  productType: string;
+  realized_profit: number;
+  unrealized_profit: number;
+  pl: number;
+  ltp: number;
+  buyQty: number;
+  buyAvg: number;
+  buyVal: number;
+  sellQty: number;
+  sellAvg: number;
+  sellVal: number;
+  slNo: number;
+  fyToken: string;
+  crossCurrency: string;
+  rbiRefRate: number;
+  qtyMulti_com: number;
+  segment: number;
+  symbol: string;
+  id: string;
+  cfBuyQty: number;
+  cfSellQty: number;
+  dayBuyQty: number;
+  daySellQty: number;
+  exchange: number;
+}
+
+export interface FyresPositionsOverall {
+  count_total: number;
+  count_open: number;
+  pl_total: number;
+  pl_realized: number;
+  pl_unrealized: number;
+}
+
+export interface FyresPositionsResponse extends FyresResponse {
+  netPositions: FyresPosition[];
+  overall: FyresPositionsOverall;
+}
