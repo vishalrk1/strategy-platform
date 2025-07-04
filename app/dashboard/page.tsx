@@ -3,7 +3,6 @@
 import React, { useEffect, useMemo } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { BarChart3, Settings } from "lucide-react";
-import { StrategyModal } from "@/components/StrategyModal";
 import { BrokerSettingsModal } from "@/components/BrokerSettingsModal";
 import { useAuthStore } from "@/stores/authStore";
 import { useFyersStore } from "@/stores/fyersStore";
@@ -13,6 +12,7 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { usePositionsStore } from "@/stores/positionsStore";
+import MAStrategyModal from "@/components/modal/MaModal";
 
 export default function Dashboard() {
   const { user } = useAuthStore();
@@ -38,8 +38,6 @@ export default function Dashboard() {
     return getFundsDetails(fund_limit);
   }, [fund_limit]);
 
-  console.log(overallPositions);
-
   return (
     <ProtectedRoute>
       <main className="max-w-[90%] mx-auto py-4 sm:py-6 px-4 sm:px-6 lg:px-8">
@@ -56,24 +54,26 @@ export default function Dashboard() {
               )}
             </div>
             <div className="flex items-center justify-center gap-4">
-              <StrategyModal>
-                <Button
-                  variant="outline"
-                  className="bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 hover:border-blue-400 dark:hover:border-blue-600"
-                >
-                  <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  <span className="ml-2">Create New Strategy</span>
-                </Button>
-              </StrategyModal>
-              <BrokerSettingsModal>
-                <Button
-                  variant="outline"
-                  className="bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-600"
-                >
-                  <Settings className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                  <span className="ml-2">Account Settings</span>
-                </Button>
-              </BrokerSettingsModal>
+              {user && user?.fyersAccessToken ? (
+                <MAStrategyModal />
+              ) : (
+                <BrokerSettingsModal>
+                  <Button
+                    variant="outline"
+                    className="bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 hover:border-blue-400 dark:hover:border-blue-600"
+                  >
+                    <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <span>{`Connect to ${user?.dataProvider}`}</span>
+                  </Button>
+                </BrokerSettingsModal>
+              )}
+              <Button
+                variant="outline"
+                className="bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-600"
+              >
+                <Settings className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                <span className="ml-2">Account Settings</span>
+              </Button>
             </div>
           </div>
         </div>
@@ -94,7 +94,7 @@ export default function Dashboard() {
                   >
                     {overallPositions
                       ? formatCurrency(overallPositions.pl_total)
-                      : "Loading..."}
+                      : "NA"}
                   </div>
                 </div>
                 <div className="ml-4 md:ml-16 flex items-center justify-around space-x-6 h-full">
@@ -113,7 +113,7 @@ export default function Dashboard() {
                     >
                       {overallPositions
                         ? formatCurrency(overallPositions.pl_realized)
-                        : "Loading..."}
+                        : "NA"}
                     </div>
                   </div>
                   <Separator
@@ -135,7 +135,7 @@ export default function Dashboard() {
                     >
                       {overallPositions
                         ? formatCurrency(overallPositions.pl_unrealized)
-                        : "Loading..."}
+                        : "NA"}
                     </div>
                   </div>
                 </div>

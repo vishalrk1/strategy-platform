@@ -173,7 +173,7 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    const updateResult = await usersCollection.updateOne(
+    await usersCollection.updateOne(
       { _id: new ObjectId(decoded._id) },
       {
         $set: updateFields,

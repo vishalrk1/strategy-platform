@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
-import { useFyersStore } from "@/stores/fyersStore"; // Add this import
+import { useFyersStore } from "@/stores/fyersStore";
 import { User } from "@/types/user";
 import { FyersCredentialsForm } from "@/components/FyersCredentialsForm";
 import {
@@ -15,7 +15,22 @@ import {
 } from "@/lib/fyersApi";
 import { fyresCredentials } from "@/types/fyres/types";
 
-export default function FyersVerification() {
+// Loading fallback component
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex flex-col justify-center items-center px-6 py-12">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+          Loading...
+        </h2>
+      </div>
+    </div>
+  );
+}
+
+// Main component that uses useSearchParams
+function FyersVerificationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const {
@@ -581,4 +596,13 @@ export default function FyersVerification() {
   }
 
   return null;
+}
+
+// Wrapper component with Suspense
+export default function FyersVerification() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <FyersVerificationContent />
+    </Suspense>
+  );
 }
