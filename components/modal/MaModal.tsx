@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BarChart3 } from "lucide-react";
 import {
@@ -51,6 +51,66 @@ const slideVariants = {
 export default function MAStrategyModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
+  const [contentHeight, setContentHeight] = useState<number | undefined>(
+    undefined
+  );
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const [windowHeight, setWindowHeight] = useState(0);
+
+  // Function to measure content height
+  const measureContentHeight = () => {
+    if (contentRef.current) {
+      setContentHeight(contentRef.current.scrollHeight);
+    }
+  };
+
+  // Effect for window resize events
+  useEffect(() => {
+    setWindowHeight(window.innerHeight);
+
+    const handleResize = () => {
+      setWindowHeight(window.innerHeight);
+      measureContentHeight();
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Effect for step changes
+  useEffect(() => {
+    let observer: MutationObserver | null = null;
+
+    // Measure immediately to get initial height
+    measureContentHeight();
+
+    // Add a small delay to ensure content has rendered before measuring height again
+    const timer = setTimeout(() => {
+      measureContentHeight();
+
+      // Set up mutation observer to detect content changes
+      if (contentRef.current) {
+        observer = new MutationObserver(() => {
+          requestAnimationFrame(measureContentHeight);
+        });
+
+        observer.observe(contentRef.current, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          characterData: true,
+        });
+      }
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      if (observer) {
+        observer.disconnect();
+      }
+    };
+  }, [currentStep]);
 
   // Define strategies with their details
   const strategies: Strategy[] = [
@@ -93,18 +153,12 @@ export default function MAStrategyModal() {
     priceRangeMax: "",
 
     // Step 3: Risk Management & Targets
-    stoplossType: "percentage",
+    riskManagementType: "percentage",
     stoplossRupees: "",
-    stoplossPercentage: "2",
-    squareOffBy310: "yes",
-    exitQty1: "",
-    exitQty2: "",
-    exitQty3: "",
-    exitQty4: "",
-    target1: "",
-    target2: "",
-    target3: "",
-    target4: "",
+    stoplossPercentage: "",
+    maxProfitRupees: "",
+    maxProfitPercentage: "",
+    squareOffBy310: true,
 
     // Step 4: Terms
     termsAccepted: false,
@@ -160,7 +214,18 @@ export default function MAStrategyModal() {
           <span className="ml-2">Create New Strategy</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="min-w-6xl w-[80vw] max-h-[95vh] shadow-lg border-none rounded-2xl p-0 flex flex-col">
+      <DialogContent
+        onInteractOutside={(e) => {
+          e.preventDefault();
+        }}
+        className="min-w-6xl w-[80vw] h-auto max-h-[95vh] shadow-lg border-none rounded-2xl p-0 flex flex-col overflow-hidden"
+        style={{
+          height: contentHeight
+            ? `${Math.min(contentHeight + 200, windowHeight * 0.95)}px`
+            : "auto",
+          transition: "height 0.15s ease-in-out",
+        }}
+      >
         <DialogHeader className="p-6 pb-0 flex-shrink-0">
           <DialogTitle className="text-2xl font-bold">
             Moving Average Strategy Setup
@@ -170,13 +235,18 @@ export default function MAStrategyModal() {
             advanced configuration options.
           </DialogDescription>
         </DialogHeader>
-        <div className="px-6 py-0 w-full flex-grow overflow-y-auto">
+        <div className="px-6 py-0 w-full flex-grow overflow-visible">
           <motion.div
+            ref={contentRef}
             layout
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="mx-auto w-full rounded-xl shadow-lg flex flex-col overflow-hidden border-none"
+            transition={{ duration: 0.15, ease: "easeInOut" }}
+            className="mx-auto w-full rounded-xl shadow-lg flex flex-col overflow-visible border-none"
+            style={{
+              minHeight: "300px",
+              height: "auto",
+            }}
           >
-            <div className="p-4 flex-shrink-0">
+            <div className="p-4 pb-0 flex-shrink-0">
               <SegmentedLoader
                 currentStep={currentStep}
                 totalSteps={totalSteps}
@@ -185,14 +255,10 @@ export default function MAStrategyModal() {
             </div>
             <motion.div
               layout
-              className="relative flex-grow"
+              className="relative w-full"
               style={{ minHeight: "auto" }}
             >
-              <AnimatePresence
-                initial={false}
-                custom={currentStep}
-                mode="popLayout"
-              >
+              <AnimatePresence initial={false} custom={currentStep} mode="wait">
                 <motion.div
                   layout
                   key={currentStep}
@@ -203,18 +269,18 @@ export default function MAStrategyModal() {
                   exit="exit"
                   transition={{
                     layout: {
-                      duration: 0.3,
+                      duration: 0.15,
                       ease: "easeInOut",
                     },
                     x: {
                       type: "spring",
-                      stiffness: 300,
-                      damping: 30,
-                      duration: 0.1,
+                      stiffness: 400,
+                      damping: 35,
+                      duration: 0.05,
                     },
-                    opacity: { duration: 0.1 },
+                    opacity: { duration: 0.05 },
                   }}
-                  className="w-full"
+                  className="w-full h-auto"
                 >
                   {/* Step 1 */}
                   {currentStep === 0 && (
@@ -258,23 +324,36 @@ export default function MAStrategyModal() {
           </motion.div>
         </div>
         <DialogFooter className="p-6 pt-4 border-t mt-auto flex-shrink-0">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentStep((prev) => Math.max(prev - 1, 0))}
-            disabled={currentStep === 0}
-            className="disabled:opacity-50"
-          >
-            Previous
-          </Button>
-          <Button
-            onClick={() =>
-              setCurrentStep((prev) => Math.min(prev + 1, totalSteps - 1))
-            }
-            disabled={currentStep === totalSteps - 1}
-            className="disabled:opacity-50"
-          >
-            {currentStep === totalSteps - 1 ? "Complete" : "Next"}
-          </Button>
+          {currentStep > 0 ? (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCurrentStep((prev) => Math.max(prev - 1, 0));
+              }}
+              className="mr-2"
+            >
+              Previous
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              className="mr-2"
+            >
+              Cancel
+            </Button>
+          )}
+          {currentStep !== totalSteps - 1 && (
+            <Button
+              onClick={() => {
+                setCurrentStep((prev) => Math.min(prev + 1, totalSteps - 1));
+              }}
+              disabled={currentStep === totalSteps - 1}
+              className="disabled:opacity-50"
+            >
+              {currentStep === totalSteps - 1 ? "Complete" : "Next"}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

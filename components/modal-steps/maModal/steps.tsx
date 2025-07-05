@@ -9,25 +9,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MaStrategyFormData, Strategy } from "@/types/modal/maModal";
-import { Checkbox } from "@radix-ui/react-checkbox";
-import { AlertCircle, Check, FileText, Target } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertCircle, Check } from "lucide-react";
 import React from "react";
 
 interface MaModalStep1Props {
   strategies: Strategy[];
   formData: MaStrategyFormData;
-  updateFormData: (field: keyof MaStrategyFormData, value: string) => void;
+  updateFormData: (
+    field: keyof MaStrategyFormData,
+    value: string | boolean
+  ) => void;
 }
 
 interface MaModalStep2Props {
   strategies: Strategy[];
   formData: MaStrategyFormData;
-  updateFormData: (field: keyof MaStrategyFormData, value: string) => void;
+  updateFormData: (
+    field: keyof MaStrategyFormData,
+    value: string | boolean
+  ) => void;
   indexOptions: { value: string; label: string; maxStocks: number }[];
   timeframeOptions: { value: string; label: string }[];
   sourceOptions: { value: string; label: string }[];
   getMaxStocks: () => number;
+}
+
+export function StageTitle({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-3">
+        <h2 className="text-2xl font-bold">{title}</h2>
+      </div>
+      <p className="text-gray-600 dark:text-gray-400">{description}</p>
+    </div>
+  );
 }
 
 export function MaModalStep1({
@@ -36,15 +60,11 @@ export function MaModalStep1({
   updateFormData,
 }: MaModalStep1Props) {
   return (
-    <div className="flex flex-col gap-4 p-6 pb-6 w-full">
-      <div className="mb-4">
-        <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold">Choose Your Trading Strategy</h2>
-        </div>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Set up your personalized trading strategy to start automated trading
-        </p>
-      </div>
+    <div className="flex flex-col gap-4 p-6 w-full min-h-[300px]">
+      <StageTitle
+        title="Choose Your Trading Strategy"
+        description="Set up your personalized trading strategy to start automated trading"
+      />
 
       {/* Show strategy details based on selection */}
       {strategies.map(
@@ -106,19 +126,14 @@ export function MaModalStep2({
   getMaxStocks,
 }: MaModalStep2Props) {
   return (
-    <div className="flex flex-col gap-4 p-6 pb-6 w-full">
-      <div className="mb-4">
-        <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold">Configure Strategy Parameters</h2>
-        </div>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Set up your index selection, position type, and technical parameters
-        </p>
-      </div>
-
+    <div className="flex flex-col gap-4 p-6 w-full min-h-[300px]">
+      <StageTitle
+        title="Configure Strategy Parameters"
+        description="Set up your index selection, position type, and technical parameters"
+      />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
-          <Label>Index Selection</Label>
+          <Label className="mb-2">Index Selection</Label>
           <Select
             value={formData.index}
             onValueChange={(value) => updateFormData("index", value)}
@@ -137,7 +152,7 @@ export function MaModalStep2({
         </div>
 
         <div>
-          <Label>Position Type</Label>
+          <Label className="mb-2">Position Type</Label>
           <Select
             value={formData.positionType}
             onValueChange={(value) => updateFormData("positionType", value)}
@@ -153,7 +168,7 @@ export function MaModalStep2({
         </div>
 
         <div>
-          <Label>Timeframe</Label>
+          <Label className="mb-2">Timeframe</Label>
           <Select
             value={formData.timeframe}
             onValueChange={(value) => updateFormData("timeframe", value)}
@@ -175,7 +190,7 @@ export function MaModalStep2({
         </div>
 
         <div>
-          <Label>Moving Average Length</Label>
+          <Label className="mb-2">Moving Average Length</Label>
           <Input
             type="number"
             value={formData.movingAverageLength}
@@ -189,7 +204,7 @@ export function MaModalStep2({
         </div>
 
         <div>
-          <Label>Source</Label>
+          <Label className="mb-2">Source</Label>
           <Select
             value={formData.source}
             onValueChange={(value) => updateFormData("source", value)}
@@ -208,7 +223,7 @@ export function MaModalStep2({
         </div>
 
         <div>
-          <Label>Number of Stocks Allowed</Label>
+          <Label className="mb-2">Number of Stocks Allowed</Label>
           <Input
             type="number"
             value={formData.stocksAllowed}
@@ -223,10 +238,9 @@ export function MaModalStep2({
           </p>
         </div>
       </div>
-
-      <div className="mt-4">
+      <div>
         <Label>Stock Price Range (Optional)</Label>
-        <div className="flex gap-2 mt-1">
+        <div className="flex gap-2 mt-2">
           <Input
             type="number"
             placeholder="Min Price (₹)"
@@ -250,88 +264,140 @@ export function MaModalStep3({
   updateFormData,
 }: {
   formData: MaStrategyFormData;
-  updateFormData: (field: keyof MaStrategyFormData, value: string) => void;
+  updateFormData: (
+    field: keyof MaStrategyFormData,
+    value: string | boolean
+  ) => void;
 }) {
   return (
-    <div className="flex flex-col gap-4 p-6 pb-6 w-full">
-      <div className="text-center mb-4">
-        <Target className="mx-auto h-12 w-12 text-green-500 mb-2" />
-        <h2 className="text-2xl font-bold">Risk Management & Targets</h2>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Configure your stop loss, targets, and exit strategy
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        <div>
-          <Label>Stop Loss Configuration</Label>
-          <div className="flex gap-4 mt-2">
-            <div className="flex items-center space-x-2">
-              <input
-                type="radio"
-                id="stoploss-percentage"
-                name="stoplossType"
-                value="percentage"
-                checked={formData.stoplossType === "percentage"}
-                onChange={(e) => updateFormData("stoplossType", e.target.value)}
-              />
-              <Label htmlFor="stoploss-percentage">Percentage (%)</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="radio"
-                id="stoploss-rupees"
-                name="stoplossType"
-                value="rupees"
-                checked={formData.stoplossType === "rupees"}
-                onChange={(e) => updateFormData("stoplossType", e.target.value)}
-              />
-              <Label htmlFor="stoploss-rupees">Rupees (₹)</Label>
-            </div>
-          </div>
-
-          {formData.stoplossType === "percentage" ? (
-            <Input
-              type="number"
-              placeholder="Enter percentage (0-100)"
-              value={formData.stoplossPercentage}
-              onChange={(e) =>
-                updateFormData("stoplossPercentage", e.target.value)
-              }
-              className="mt-2"
-              min="0"
-              max="100"
-              step="0.1"
-            />
-          ) : (
-            <Input
-              type="number"
-              placeholder="Enter amount in rupees"
-              value={formData.stoplossRupees}
-              onChange={(e) => updateFormData("stoplossRupees", e.target.value)}
-              className="mt-2"
-              min="0"
-              step="1"
-            />
-          )}
+    <div className="flex flex-col gap-2 p-6 w-full min-h-[300px]">
+      <StageTitle
+        title="Risk Management & Targets"
+        description="Configure your stop profit and loss settings, and exit strategy"
+      />
+      <div className="mb-6 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+        <div className="text-sm text-blue-800 dark:text-blue-200">
+          <p className="font-semibold mb-1">Important Notice</p>
+          <ul className="list-disc list-inside gap-1">
+            <li className="mb-1">
+              Ensure your stop loss and profit targets are set according to your
+              risk tolerance. These settings will automatically trigger trades
+              based conditions.
+            </li>
+            <li>
+              The strategy will exit all positions automatically when the
+              specified profit or loss is reached. set your targets wisely.
+            </li>
+          </ul>
         </div>
+      </div>
+      <div className="space-y-1 grid grid-cols-1 md:grid-cols-2 gap-4 gap-x-4 gap-y-2">
+        {formData.riskManagementType === "percentage" ? (
+          <>
+            <div>
+              <Label>Stop Loss Configuration</Label>
+              <Input
+                type="number"
+                placeholder="Enter percentage (0-100)"
+                value={formData.stoplossPercentage}
+                onChange={(e) =>
+                  updateFormData("stoplossPercentage", e.target.value)
+                }
+                className="mt-2"
+                min="0"
+                max="100"
+                step="0.1"
+              />
+            </div>
+            <div>
+              <Label>Maximum profit targate</Label>
+              <Input
+                type="number"
+                placeholder="Enter percentage (0-100)"
+                value={formData.maxProfitPercentage}
+                onChange={(e) =>
+                  updateFormData("maxProfitPercentage", e.target.value)
+                }
+                className="mt-2"
+                min="0"
+                max="100"
+                step="0.1"
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div>
+              <Label>Stop Loss Configuration</Label>
+              <Input
+                type="number"
+                placeholder="Enter amount in rupees"
+                value={formData.stoplossRupees}
+                onChange={(e) =>
+                  updateFormData("stoplossRupees", e.target.value)
+                }
+                className="mt-2"
+                min="0"
+                step="1"
+              />
+            </div>
+            <div>
+              <Label>Maximum profit targate</Label>
+              <Input
+                type="number"
+                placeholder="Enter amount in rupees"
+                value={formData.maxProfitRupees}
+                onChange={(e) =>
+                  updateFormData("maxProfitRupees", e.target.value)
+                }
+                className="mt-2"
+                min="0"
+                step="1"
+              />
+            </div>
+          </>
+        )}
         <div>
-          <Label>Square Off by 3:10 PM</Label>
-          <Select
-            value={formData.squareOffBy310}
-            onValueChange={(value) => updateFormData("squareOffBy310", value)}
+          <RadioGroup
+            className="flex gap-4"
+            value={formData.riskManagementType}
+            onValueChange={(value) =>
+              updateFormData("riskManagementType", value)
+            }
           >
-            <SelectTrigger className="mt-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="yes">Yes</SelectItem>
-              <SelectItem value="no">No</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-sm text-gray-500 mt-1">
-            Avoid auto square-off charges by broker
-          </p>
+            <div className="flex items-center space-x-2 border rounded-md px-3 py-2 hover:bg-green-50 dark:hover:bg-green-900/10 transition-colors">
+              <RadioGroupItem
+                value="rupees"
+                id="stoploss-rupees"
+                className="border-green-500 text-green-600 focus-visible:ring-green-500/20 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+              />
+              <Label htmlFor="stoploss-rupees" className="cursor-pointer">
+                Rupees (₹)
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2 border rounded-md px-3 py-2 hover:bg-green-50 dark:hover:bg-green-900/10 transition-colors">
+              <RadioGroupItem
+                value="percentage"
+                id="stoploss-percentage"
+                className="border-green-500 text-green-600 focus-visible:ring-green-500/20 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+              />
+              <Label htmlFor="stoploss-percentage" className="cursor-pointer">
+                Percentage (%)
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="squareOffBy310"
+            checked={formData.squareOffBy310}
+            onCheckedChange={(checked) =>
+              updateFormData("squareOffBy310", checked)
+            }
+          />
+          <Label htmlFor="squareOffBy310" className="cursor-pointer">
+            Square off all positions by 3:10 PM
+          </Label>
         </div>
       </div>
     </div>
@@ -351,13 +417,23 @@ export function MaModalStep4({
   setIsOpen: (isOpen: boolean) => void;
 }) {
   return (
-    <div className="flex flex-col gap-4 p-6 pb-6 w-full">
-      <div className="text-center mb-4">
-        <FileText className="mx-auto h-12 w-12 text-orange-500 mb-2" />
-        <h2 className="text-2xl font-bold">Terms & Confirmation</h2>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Review your strategy and accept terms to proceed
-        </p>
+    <div className="flex flex-col gap-4 p-6 w-full min-h-[300px]">
+      <StageTitle
+        title="Terms & Confirmation"
+        description="Review your strategy and accept terms to proceed"
+      />
+      <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+          <div className="text-sm text-amber-800 dark:text-amber-200">
+            <p className="font-semibold mb-1">Important Notice:</p>
+            <p>
+              This strategy will execute trades automatically based on your
+              configuration. Ensure you have sufficient funds and monitor your
+              positions regularly.
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -400,21 +476,6 @@ export function MaModalStep4({
             </div>
           </div>
         </div>
-
-        <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
-          <div className="flex items-start gap-2">
-            <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
-            <div className="text-sm text-amber-800 dark:text-amber-200">
-              <p className="font-semibold mb-1">Important Notice:</p>
-              <p>
-                This strategy will execute trades automatically based on your
-                configuration. Ensure you have sufficient funds and monitor your
-                positions regularly.
-              </p>
-            </div>
-          </div>
-        </div>
-
         {formData.termsAccepted && formData.riskDisclosure && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
