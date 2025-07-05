@@ -36,15 +36,15 @@ export interface MaStrategyFormData {
   movingAverageLength: string;
   source: string;
   stocksAllowed: string;
-  priceRangeMin: string;
-  priceRangeMax: string;
+  priceRangeMin?: string;
+  priceRangeMax?: string;
 
   // Step 3: Risk Management & Targets
   riskManagementType: "percentage" | "rupees";
-  stoplossRupees: string;
-  stoplossPercentage: string;
-  maxProfitRupees: string;
-  maxProfitPercentage: string;
+  stoplossRupees?: string;
+  stoplossPercentage?: string;
+  maxProfitRupees?: string;
+  maxProfitPercentage?: string;
   squareOffBy310: boolean;
 
   // Step 4: Terms

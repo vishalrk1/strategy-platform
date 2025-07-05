@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useForm } from "react-hook-form";
 import { BarChart3 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -14,38 +15,23 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { SegmentedLoader } from "@/components/ui/SegmentLoader";
-import {
-  Strategy,
-  IndexOption,
-  TimeframeOption,
-  SourceOption,
-  MaStrategyFormData,
-  FormStep,
-} from "@/types/modal";
+import { MaStrategyFormData, FormStep } from "@/types/modal";
 import {
   MaModalStep1,
   MaModalStep2,
   MaModalStep3,
   MaModalStep4,
 } from "../modal-steps/maModal/steps";
-
-// Main Progress Card Component
-const slideVariants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? 300 : -300,
-    opacity: 0,
-  }),
-  center: {
-    zIndex: 1,
-    x: 0,
-    opacity: 1,
-  },
-  exit: (direction: number) => ({
-    zIndex: 0,
-    x: direction < 0 ? 300 : -300,
-    opacity: 0,
-  }),
-};
+import {
+  ALGO_STRATERGIES,
+  INDEX_OPTIONS,
+  SOURCE_OPTIONS,
+  TIME_FRAME_OPTIONS,
+} from "@/app/constant/constants";
+import {
+  MODAL_SLIDE_ANIMATION_VARIENT,
+  MODAL_STEP_TRANSITION,
+} from "@/app/constant/animation-constants";
 
 // Main Modal Component
 export default function MAStrategyModal() {
@@ -55,8 +41,39 @@ export default function MAStrategyModal() {
     undefined
   );
   const contentRef = useRef<HTMLDivElement>(null);
-
   const [windowHeight, setWindowHeight] = useState(0);
+  const totalSteps = 4;
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    trigger,
+    watch,
+    setValue,
+    setError,
+  } = useForm<MaStrategyFormData>({
+    defaultValues: {
+      strategyName: ALGO_STRATERGIES[0].name,
+      index: "",
+      positionType: undefined,
+      timeframe: "",
+      movingAverageLength: "",
+      source: "",
+      stocksAllowed: "",
+      priceRangeMin: "",
+      priceRangeMax: "",
+      riskManagementType: "percentage",
+      stoplossRupees: "",
+      stoplossPercentage: "",
+      maxProfitRupees: "",
+      maxProfitPercentage: "",
+      squareOffBy310: true,
+      termsAccepted: false,
+      riskDisclosure: false,
+    },
+    mode: "onChange",
+  });
 
   // Function to measure content height
   const measureContentHeight = () => {
@@ -81,15 +98,11 @@ export default function MAStrategyModal() {
   // Effect for step changes
   useEffect(() => {
     let observer: MutationObserver | null = null;
-
-    // Measure immediately to get initial height
     measureContentHeight();
 
     // Add a small delay to ensure content has rendered before measuring height again
     const timer = setTimeout(() => {
       measureContentHeight();
-
-      // Set up mutation observer to detect content changes
       if (contentRef.current) {
         observer = new MutationObserver(() => {
           requestAnimationFrame(measureContentHeight);
@@ -112,96 +125,119 @@ export default function MAStrategyModal() {
     };
   }, [currentStep]);
 
-  // Define strategies with their details
-  const strategies: Strategy[] = [
-    {
-      id: "ma-strategy",
-      name: "MA Strategy",
-      title: "Moving Average Strategy",
-      description:
-        "This strategy uses moving averages to identify trend direction and generate buy/sell signals. Perfect for both intraday and overnight positions with customizable risk management.",
-      bgColor: "bg-blue-50 dark:bg-blue-900/20",
-      borderColor: "border-blue-200 dark:border-blue-800",
-      textColor: "text-blue-700 dark:text-blue-300",
-      titleColor: "text-blue-900 dark:text-blue-100",
-    },
-    {
-      id: "hammer-strategy",
-      name: "Hammer Strategy",
-      title: "Hammer Candlestick Strategy",
-      description:
-        "This strategy identifies hammer candlestick patterns to spot potential reversals and generate trade signals. Suitable for traders looking for price action-based entries.",
-      bgColor: "bg-blue-50 dark:bg-blue-900/20",
-      borderColor: "border-blue-200 dark:border-blue-800",
-      textColor: "text-blue-700 dark:text-blue-300",
-      titleColor: "text-blue-900 dark:text-blue-100",
-    },
-  ];
-
-  const [formData, setFormData] = useState<MaStrategyFormData>({
-    // Step 1: Strategy Name
-    strategyName: strategies[0].name,
-
-    // Step 2: Basic Configuration
-    index: "nifty50",
-    positionType: "intraday",
-    timeframe: "15",
-    movingAverageLength: "9",
-    source: "close",
-    stocksAllowed: "5",
-    priceRangeMin: "",
-    priceRangeMax: "",
-
-    // Step 3: Risk Management & Targets
-    riskManagementType: "percentage",
-    stoplossRupees: "",
-    stoplossPercentage: "",
-    maxProfitRupees: "",
-    maxProfitPercentage: "",
-    squareOffBy310: true,
-
-    // Step 4: Terms
-    termsAccepted: false,
-    riskDisclosure: false,
-  });
-
-  const updateFormData = (field: string, value: unknown) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const indexOptions: IndexOption[] = [
-    { value: "nifty50", label: "Nifty 50", maxStocks: 50 },
-    { value: "niftynext50", label: "Nifty Next 50", maxStocks: 50 },
-    { value: "nifty100", label: "Nifty 100", maxStocks: 100 },
-    { value: "nifty200", label: "Nifty 200", maxStocks: 200 },
-    { value: "nifty500", label: "Nifty 500", maxStocks: 500 },
-  ];
-
-  const timeframeOptions: TimeframeOption[] = [
-    { value: "5", label: "5 Minutes" },
-    { value: "15", label: "15 Minutes" },
-    { value: "30", label: "30 Minutes" },
-    { value: "60", label: "1 Hour" },
-    { value: "120", label: "2 Hours" },
-    { value: "180", label: "3 Hours" },
-    { value: "day", label: "Day" },
-  ];
-
-  const sourceOptions: SourceOption[] = [
-    { value: "open", label: "Open" },
-    { value: "high", label: "High" },
-    { value: "low", label: "Low" },
-    { value: "close", label: "Close" },
-  ];
-
   const getMaxStocks = () => {
-    const selectedIndex = indexOptions.find(
-      (opt) => opt.value === formData.index
+    const selectedIndex = INDEX_OPTIONS.find(
+      (opt) => opt.value === watch("index")
     );
     return selectedIndex ? selectedIndex.maxStocks : 50;
   };
 
-  const totalSteps = 4;
+  const validateStep2Fields = async (): Promise<boolean> => {
+    let hasValidationErrors = false;
+
+    if (!watch("index") || watch("index") === "") {
+      setError("index", {
+        type: "required",
+        message: "Index selection is required",
+      });
+      hasValidationErrors = true;
+    }
+
+    if (!watch("timeframe") || watch("timeframe") === "") {
+      setError("timeframe", {
+        type: "required",
+        message: "Timeframe is required",
+      });
+      hasValidationErrors = true;
+    }
+
+    if (!watch("positionType")) {
+      setError("positionType", {
+        type: "required",
+        message: "Position type is required",
+      });
+      hasValidationErrors = true;
+    }
+
+    if (!watch("source") || watch("source") === "") {
+      setError("source", { type: "required", message: "Source is required" });
+      hasValidationErrors = true;
+    }
+
+    return !hasValidationErrors;
+  };
+
+  const onSubmit = (data: MaStrategyFormData) => {
+    console.log(data);
+    setIsOpen(false);
+  };
+
+  const handleNext = async () => {
+    const nextStep = currentStep + 1;
+    if (nextStep >= totalSteps) return;
+
+    // Determine which fields to validate based on the current step
+    let fieldsToValidate: (keyof MaStrategyFormData)[] = [];
+
+    // Step 1 validation (Strategy selection)
+    if (currentStep === 0) {
+      fieldsToValidate = ["strategyName"];
+    }
+    // Step 2 validation (Strategy parameters)
+    else if (currentStep === 1) {
+      fieldsToValidate = [
+        "index",
+        "positionType",
+        "timeframe",
+        "movingAverageLength",
+        "source",
+        "stocksAllowed",
+      ];
+
+      // Ensure these fields have validation rules
+      register("index", {
+        required: "Index selection is required",
+      });
+
+      register("timeframe", {
+        required: "Timeframe is required",
+      });
+
+      register("source", {
+        required: "Source is required",
+      });
+    }
+    // Step 3 validation (Risk management)
+    else if (currentStep === 2) {
+      fieldsToValidate = ["riskManagementType"];
+
+      const riskType = watch("riskManagementType");
+      if (riskType === "percentage") {
+        fieldsToValidate.push("stoplossPercentage", "maxProfitPercentage");
+      } else {
+        fieldsToValidate.push("stoplossRupees", "maxProfitRupees");
+      }
+    }
+    // Step 4 validation (Terms)
+    else if (currentStep === 3) {
+      fieldsToValidate = ["termsAccepted", "riskDisclosure"];
+    }
+
+    const isValid = await trigger(fieldsToValidate);
+    let canProceed = isValid;
+
+    // Additional validation for step 1
+    if (currentStep === 1) {
+      const manualValidation = await validateStep2Fields();
+      canProceed = isValid && manualValidation;
+    }
+
+    if (canProceed) {
+      setCurrentStep((prev) => Math.min(prev + 1, totalSteps - 1));
+    } else {
+      console.log("Validation failed for fields:", fieldsToValidate);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -263,58 +299,55 @@ export default function MAStrategyModal() {
                   layout
                   key={currentStep}
                   custom={currentStep}
-                  variants={slideVariants}
+                  variants={MODAL_SLIDE_ANIMATION_VARIENT}
                   initial="enter"
                   animate="center"
                   exit="exit"
-                  transition={{
-                    layout: {
-                      duration: 0.15,
-                      ease: "easeInOut",
-                    },
-                    x: {
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 35,
-                      duration: 0.05,
-                    },
-                    opacity: { duration: 0.05 },
-                  }}
+                  transition={MODAL_STEP_TRANSITION}
                   className="w-full h-auto"
                 >
                   {/* Step 1 */}
                   {currentStep === 0 && (
                     <MaModalStep1
-                      strategies={strategies}
-                      formData={formData}
-                      updateFormData={updateFormData}
+                      strategies={ALGO_STRATERGIES}
+                      register={register}
+                      errors={errors}
+                      watch={watch}
+                      setValue={setValue}
                     />
                   )}
 
                   {/* Step 2 */}
                   {currentStep === 1 && (
                     <MaModalStep2
-                      strategies={strategies}
-                      formData={formData}
-                      updateFormData={updateFormData}
-                      indexOptions={indexOptions}
-                      timeframeOptions={timeframeOptions}
-                      sourceOptions={sourceOptions}
+                      strategies={ALGO_STRATERGIES}
+                      register={register}
+                      errors={errors}
+                      watch={watch}
+                      setValue={setValue}
+                      indexOptions={INDEX_OPTIONS}
+                      timeframeOptions={TIME_FRAME_OPTIONS}
+                      sourceOptions={SOURCE_OPTIONS}
                       getMaxStocks={getMaxStocks}
                     />
                   )}
                   {/* Step 3 */}
                   {currentStep === 2 && (
                     <MaModalStep3
-                      formData={formData}
-                      updateFormData={updateFormData}
+                      register={register}
+                      errors={errors}
+                      watch={watch}
+                      setValue={setValue}
+                      strategies={ALGO_STRATERGIES}
                     />
                   )}
                   {/* Step 4 */}
                   {currentStep === 3 && (
                     <MaModalStep4
-                      formData={formData}
-                      updateFormData={updateFormData}
+                      register={register}
+                      errors={errors}
+                      watch={watch}
+                      setValue={setValue}
                       setIsOpen={setIsOpen}
                     />
                   )}
@@ -343,15 +376,26 @@ export default function MAStrategyModal() {
               Cancel
             </Button>
           )}
-          {currentStep !== totalSteps - 1 && (
+          {currentStep !== totalSteps - 1 ? (
+            <Button onClick={handleNext} className="disabled:opacity-50">
+              Next
+            </Button>
+          ) : (
             <Button
-              onClick={() => {
-                setCurrentStep((prev) => Math.min(prev + 1, totalSteps - 1));
-              }}
-              disabled={currentStep === totalSteps - 1}
+              onClick={handleSubmit(onSubmit)}
+              disabled={
+                !watch("termsAccepted") ||
+                !watch("riskDisclosure") ||
+                Object.keys(errors).length > 0
+              }
               className="disabled:opacity-50"
+              title={
+                !watch("termsAccepted") || !watch("riskDisclosure")
+                  ? "You must accept the terms and risk disclosure"
+                  : ""
+              }
             >
-              {currentStep === totalSteps - 1 ? "Complete" : "Next"}
+              Complete
             </Button>
           )}
         </DialogFooter>

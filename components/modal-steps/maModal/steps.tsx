@@ -15,26 +15,39 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertCircle, Check } from "lucide-react";
 import React from "react";
 
+import {
+  UseFormRegister,
+  FieldErrors,
+  UseFormWatch,
+  UseFormSetValue,
+} from "react-hook-form";
+
 interface MaModalStep1Props {
   strategies: Strategy[];
-  formData: MaStrategyFormData;
-  updateFormData: (
-    field: keyof MaStrategyFormData,
-    value: string | boolean
-  ) => void;
+  register: UseFormRegister<MaStrategyFormData>;
+  errors: FieldErrors<MaStrategyFormData>;
+  watch: UseFormWatch<MaStrategyFormData>;
+  setValue?: UseFormSetValue<MaStrategyFormData>;
 }
 
 interface MaModalStep2Props {
   strategies: Strategy[];
-  formData: MaStrategyFormData;
-  updateFormData: (
-    field: keyof MaStrategyFormData,
-    value: string | boolean
-  ) => void;
+  register: UseFormRegister<MaStrategyFormData>;
+  errors: FieldErrors<MaStrategyFormData>;
+  watch: UseFormWatch<MaStrategyFormData>;
+  setValue?: UseFormSetValue<MaStrategyFormData>;
   indexOptions: { value: string; label: string; maxStocks: number }[];
   timeframeOptions: { value: string; label: string }[];
   sourceOptions: { value: string; label: string }[];
   getMaxStocks: () => number;
+}
+
+export interface MaModalStep4Props {
+  register: UseFormRegister<MaStrategyFormData>;
+  errors: FieldErrors<MaStrategyFormData>;
+  watch: UseFormWatch<MaStrategyFormData>;
+  setValue: UseFormSetValue<MaStrategyFormData>;
+  setIsOpen: (isOpen: boolean) => void;
 }
 
 export function StageTitle({
@@ -56,9 +69,11 @@ export function StageTitle({
 
 export function MaModalStep1({
   strategies,
-  formData,
-  updateFormData,
+  errors,
+  watch,
+  setValue,
 }: MaModalStep1Props) {
+  const strategyName = watch("strategyName");
   return (
     <div className="flex flex-col gap-4 p-6 w-full min-h-[300px]">
       <StageTitle
@@ -69,7 +84,7 @@ export function MaModalStep1({
       {/* Show strategy details based on selection */}
       {strategies.map(
         (strategy) =>
-          formData.strategyName === strategy.name && (
+          strategyName === strategy.name && (
             <div
               key={strategy.id}
               className={`${strategy.bgColor} p-4 rounded-lg border ${strategy.borderColor}`}
@@ -94,11 +109,13 @@ export function MaModalStep1({
             Strategy Name
           </Label>
           <Select
-            value={formData.strategyName}
-            onValueChange={(value) => updateFormData("strategyName", value)}
+            value={strategyName}
+            onValueChange={(value) =>
+              setValue && setValue("strategyName", value)
+            }
           >
             <SelectTrigger className="mt-1" id="strategyName">
-              <SelectValue />
+              <SelectValue placeholder="Select a strategy" />
             </SelectTrigger>
             <SelectContent>
               {strategies.map((strategy) => (
@@ -111,6 +128,11 @@ export function MaModalStep1({
           <p className="text-sm text-gray-500 mt-1">
             Select your strategy type
           </p>
+          {errors.strategyName && (
+            <p className="text-sm text-red-500 mt-1">
+              {errors.strategyName.message}
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -118,13 +140,24 @@ export function MaModalStep1({
 }
 
 export function MaModalStep2({
-  formData,
-  updateFormData,
+  register,
+  errors,
+  watch,
+  setValue,
   indexOptions,
   timeframeOptions,
   sourceOptions,
   getMaxStocks,
 }: MaModalStep2Props) {
+  const index = watch("index");
+  const positionType = watch("positionType");
+  const timeframe = watch("timeframe");
+  const movingAverageLength = watch("movingAverageLength");
+  const source = watch("source");
+  const stocksAllowed = watch("stocksAllowed");
+  const priceRangeMin = watch("priceRangeMin");
+  const priceRangeMax = watch("priceRangeMax");
+
   return (
     <div className="flex flex-col gap-4 p-6 w-full min-h-[300px]">
       <StageTitle
@@ -135,11 +168,11 @@ export function MaModalStep2({
         <div>
           <Label className="mb-2">Index Selection</Label>
           <Select
-            value={formData.index}
-            onValueChange={(value) => updateFormData("index", value)}
+            value={index}
+            onValueChange={(value) => setValue && setValue("index", value)}
           >
             <SelectTrigger className="mt-1">
-              <SelectValue />
+              <SelectValue placeholder="Select an index" />
             </SelectTrigger>
             <SelectContent>
               {indexOptions.map((option) => (
@@ -149,35 +182,46 @@ export function MaModalStep2({
               ))}
             </SelectContent>
           </Select>
+          {errors.index && (
+            <p className="text-sm text-red-500 mt-1">{errors.index.message || "Index selection is required"}</p>
+          )}
         </div>
 
         <div>
           <Label className="mb-2">Position Type</Label>
           <Select
-            value={formData.positionType}
-            onValueChange={(value) => updateFormData("positionType", value)}
+            value={positionType}
+            onValueChange={(value) =>
+              setValue &&
+              setValue("positionType", value as "intraday" | "overnight")
+            }
           >
             <SelectTrigger className="mt-1">
-              <SelectValue />
+              <SelectValue placeholder="Select position type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="intraday">Intraday</SelectItem>
               <SelectItem value="overnight">Overnight (CNC)</SelectItem>
             </SelectContent>
           </Select>
+          {errors.positionType && (
+            <p className="text-sm text-red-500 mt-1">
+              {errors.positionType.message || "Position type is required"}
+            </p>
+          )}
         </div>
 
         <div>
           <Label className="mb-2">Timeframe</Label>
           <Select
-            value={formData.timeframe}
-            onValueChange={(value) => updateFormData("timeframe", value)}
+            value={timeframe}
+            onValueChange={(value) => setValue && setValue("timeframe", value)}
           >
             <SelectTrigger className="mt-1">
-              <SelectValue />
+              <SelectValue placeholder="Select timeframe" />
             </SelectTrigger>
             <SelectContent>
-              {(formData.positionType === "overnight"
+              {(positionType === "overnight"
                 ? [{ value: "day", label: "Day" }]
                 : timeframeOptions
               ).map((option) => (
@@ -187,30 +231,41 @@ export function MaModalStep2({
               ))}
             </SelectContent>
           </Select>
+          {errors.timeframe && (
+            <p className="text-sm text-red-500 mt-1">
+              {errors.timeframe.message || "Timeframe is required"}
+            </p>
+          )}
         </div>
 
         <div>
           <Label className="mb-2">Moving Average Length</Label>
           <Input
             type="number"
-            value={formData.movingAverageLength}
-            onChange={(e) =>
-              updateFormData("movingAverageLength", e.target.value)
-            }
+            placeholder="Enter MA length (1-200)"
+            value={movingAverageLength}
+            {...register("movingAverageLength", {
+              required: "Moving average length is required.",
+            })}
             className="mt-1"
             min="1"
             max="200"
           />
+          {errors.movingAverageLength && (
+            <p className="text-sm text-red-500 mt-1">
+              {errors.movingAverageLength.message}
+            </p>
+          )}
         </div>
 
         <div>
           <Label className="mb-2">Source</Label>
           <Select
-            value={formData.source}
-            onValueChange={(value) => updateFormData("source", value)}
+            value={source}
+            onValueChange={(value) => setValue && setValue("source", value)}
           >
             <SelectTrigger className="mt-1">
-              <SelectValue />
+              <SelectValue placeholder="Select price source" />
             </SelectTrigger>
             <SelectContent>
               {sourceOptions.map((option) => (
@@ -220,21 +275,32 @@ export function MaModalStep2({
               ))}
             </SelectContent>
           </Select>
+          {errors.source && (
+            <p className="text-sm text-red-500 mt-1">{errors.source.message || "Source is required"}</p>
+          )}
         </div>
 
         <div>
           <Label className="mb-2">Number of Stocks Allowed</Label>
           <Input
             type="number"
-            value={formData.stocksAllowed}
-            onChange={(e) => updateFormData("stocksAllowed", e.target.value)}
+            placeholder="Enter number of stocks"
+            value={stocksAllowed}
+            {...register("stocksAllowed", {
+              required: "Number of stocks allowed is required.",
+            })}
             className="mt-1"
             min="1"
             max={getMaxStocks()}
           />
+          {errors.stocksAllowed && (
+            <p className="text-sm text-red-500 mt-1">
+              {errors.stocksAllowed.message}
+            </p>
+          )}
           <p className="text-sm text-gray-500 mt-1">
             Max: {getMaxStocks()} stocks for{" "}
-            {indexOptions.find((opt) => opt.value === formData.index)?.label}
+            {indexOptions.find((opt) => opt.value === index)?.label}
           </p>
         </div>
       </div>
@@ -244,14 +310,14 @@ export function MaModalStep2({
           <Input
             type="number"
             placeholder="Min Price (₹)"
-            value={formData.priceRangeMin}
-            onChange={(e) => updateFormData("priceRangeMin", e.target.value)}
+            value={priceRangeMin}
+            {...register("priceRangeMin")}
           />
           <Input
             type="number"
             placeholder="Max Price (₹)"
-            value={formData.priceRangeMax}
-            onChange={(e) => updateFormData("priceRangeMax", e.target.value)}
+            value={priceRangeMax}
+            {...register("priceRangeMax")}
           />
         </div>
       </div>
@@ -259,16 +325,22 @@ export function MaModalStep2({
   );
 }
 
+export interface MaModalStep3Props extends MaModalStep1Props {
+  setValue: UseFormSetValue<MaStrategyFormData>;
+}
+
 export function MaModalStep3({
-  formData,
-  updateFormData,
-}: {
-  formData: MaStrategyFormData;
-  updateFormData: (
-    field: keyof MaStrategyFormData,
-    value: string | boolean
-  ) => void;
-}) {
+  register,
+  errors,
+  watch,
+  setValue,
+}: MaModalStep3Props) {
+  const riskManagementType = watch("riskManagementType");
+  const stoplossPercentage = watch("stoplossPercentage");
+  const maxProfitPercentage = watch("maxProfitPercentage");
+  const stoplossRupees = watch("stoplossRupees");
+  const maxProfitRupees = watch("maxProfitRupees");
+
   return (
     <div className="flex flex-col gap-2 p-6 w-full min-h-[300px]">
       <StageTitle
@@ -292,77 +364,100 @@ export function MaModalStep3({
         </div>
       </div>
       <div className="space-y-1 grid grid-cols-1 md:grid-cols-2 gap-4 gap-x-4 gap-y-2">
-        {formData.riskManagementType === "percentage" ? (
+        {riskManagementType === "percentage" ? (
           <>
             <div>
               <Label>Stop Loss Configuration</Label>
               <Input
                 type="number"
                 placeholder="Enter percentage (0-100)"
-                value={formData.stoplossPercentage}
-                onChange={(e) =>
-                  updateFormData("stoplossPercentage", e.target.value)
-                }
+                value={stoplossPercentage}
+                {...register("stoplossPercentage", {
+                  required: "Stop loss percentage is required.",
+                })}
                 className="mt-2"
                 min="0"
                 max="100"
                 step="0.1"
               />
+              {errors.stoplossPercentage && (
+                <p className="text-sm text-red-500 mt-1">
+                  {errors.stoplossPercentage.message}
+                </p>
+              )}
             </div>
             <div>
-              <Label>Maximum profit targate</Label>
+              <Label>Maximum Profit Target</Label>
               <Input
                 type="number"
                 placeholder="Enter percentage (0-100)"
-                value={formData.maxProfitPercentage}
-                onChange={(e) =>
-                  updateFormData("maxProfitPercentage", e.target.value)
-                }
+                value={maxProfitPercentage}
+                {...register("maxProfitPercentage", {
+                  required: "Max profit percentage is required.",
+                })}
                 className="mt-2"
                 min="0"
                 max="100"
                 step="0.1"
               />
+              {errors.maxProfitPercentage && (
+                <p className="text-sm text-red-500 mt-1">
+                  {errors.maxProfitPercentage.message}
+                </p>
+              )}
             </div>
           </>
         ) : (
           <>
             <div>
-              <Label>Stop Loss Configuration</Label>
+              <Label>Stop Loss Configuration (₹)</Label>
               <Input
                 type="number"
                 placeholder="Enter amount in rupees"
-                value={formData.stoplossRupees}
-                onChange={(e) =>
-                  updateFormData("stoplossRupees", e.target.value)
-                }
+                value={stoplossRupees}
+                {...register("stoplossRupees", {
+                  required: "Stop loss amount is required.",
+                })}
                 className="mt-2"
                 min="0"
                 step="1"
               />
+              {errors.stoplossRupees && (
+                <p className="text-sm text-red-500 mt-1">
+                  {errors.stoplossRupees.message}
+                </p>
+              )}
             </div>
             <div>
-              <Label>Maximum profit targate</Label>
+              <Label>Maximum Profit Target (₹)</Label>
               <Input
                 type="number"
                 placeholder="Enter amount in rupees"
-                value={formData.maxProfitRupees}
-                onChange={(e) =>
-                  updateFormData("maxProfitRupees", e.target.value)
-                }
+                value={maxProfitRupees}
+                {...register("maxProfitRupees", {
+                  required: "Max profit amount is required.",
+                })}
                 className="mt-2"
                 min="0"
                 step="1"
               />
+              {errors.maxProfitRupees && (
+                <p className="text-sm text-red-500 mt-1">
+                  {errors.maxProfitRupees.message}
+                </p>
+              )}
             </div>
           </>
         )}
         <div>
+          <Label className="mb-2">
+            Risk Management Type
+          </Label>
           <RadioGroup
             className="flex gap-4"
-            value={formData.riskManagementType}
+            value={riskManagementType}
             onValueChange={(value) =>
-              updateFormData("riskManagementType", value)
+              setValue("riskManagementType", value as "percentage" | "rupees")
             }
           >
             <div className="flex items-center space-x-2 border rounded-md px-3 py-2 hover:bg-green-50 dark:hover:bg-green-900/10 transition-colors">
@@ -390,10 +485,8 @@ export function MaModalStep3({
         <div className="flex items-center space-x-2">
           <Checkbox
             id="squareOffBy310"
-            checked={formData.squareOffBy310}
-            onCheckedChange={(checked) =>
-              updateFormData("squareOffBy310", checked)
-            }
+            checked={watch("squareOffBy310")}
+            onCheckedChange={(checked) => setValue("squareOffBy310", !!checked)}
           />
           <Label htmlFor="squareOffBy310" className="cursor-pointer">
             Square off all positions by 3:10 PM
@@ -405,17 +498,14 @@ export function MaModalStep3({
 }
 
 export function MaModalStep4({
-  formData,
-  updateFormData,
+  errors,
+  watch,
+  setValue,
   setIsOpen,
-}: {
-  formData: MaStrategyFormData;
-  updateFormData: (
-    field: keyof MaStrategyFormData,
-    value: string | boolean
-  ) => void;
-  setIsOpen: (isOpen: boolean) => void;
-}) {
+}: MaModalStep4Props) {
+  const termsAccepted = watch("termsAccepted");
+  const riskDisclosure = watch("riskDisclosure");
+
   return (
     <div className="flex flex-col gap-4 p-6 w-full min-h-[300px]">
       <StageTitle
@@ -441,9 +531,9 @@ export function MaModalStep4({
           <div className="flex items-start space-x-3">
             <Checkbox
               id="terms"
-              checked={formData.termsAccepted}
+              checked={termsAccepted}
               onCheckedChange={(checked) =>
-                updateFormData("termsAccepted", checked)
+                setValue("termsAccepted", !!checked)
               }
             />
             <div className="text-sm leading-relaxed">
@@ -456,14 +546,19 @@ export function MaModalStep4({
                 all trading decisions made by this strategy.
               </Label>
             </div>
+            {errors.termsAccepted && (
+              <p className="text-sm text-red-500 mt-1">
+                {errors.termsAccepted.message}
+              </p>
+            )}
           </div>
 
           <div className="flex items-start space-x-3">
             <Checkbox
               id="risk"
-              checked={formData.riskDisclosure}
+              checked={riskDisclosure}
               onCheckedChange={(checked) =>
-                updateFormData("riskDisclosure", checked)
+                setValue("riskDisclosure", !!checked)
               }
             />
             <div className="text-sm leading-relaxed">
@@ -474,9 +569,14 @@ export function MaModalStep4({
                 results. I can afford potential losses.
               </Label>
             </div>
+            {errors.riskDisclosure && (
+              <p className="text-sm text-red-500 mt-1">
+                {errors.riskDisclosure.message}
+              </p>
+            )}
           </div>
         </div>
-        {formData.termsAccepted && formData.riskDisclosure && (
+        {termsAccepted && riskDisclosure && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -493,7 +593,7 @@ export function MaModalStep4({
 
         <Button
           className="w-full mt-4"
-          disabled={!formData.termsAccepted || !formData.riskDisclosure}
+          disabled={!termsAccepted || !riskDisclosure}
           onClick={() => {
             alert("Strategy created successfully!");
             setIsOpen(false);
