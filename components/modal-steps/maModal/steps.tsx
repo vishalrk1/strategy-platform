@@ -202,6 +202,7 @@ export function MaModalStep2({
             <SelectContent>
               <SelectItem value="intraday">Intraday</SelectItem>
               <SelectItem value="overnight">Overnight (CNC)</SelectItem>
+              <SelectItem value="mtf">Margin Trading Facility (MTF)</SelectItem>
             </SelectContent>
           </Select>
           {errors.positionType && (
@@ -367,7 +368,7 @@ export function MaModalStep3({
         {riskManagementType === "percentage" ? (
           <>
             <div>
-              <Label>Stop Loss Configuration</Label>
+              <Label>Stop Loss Configuration (%)</Label>
               <Input
                 type="number"
                 placeholder="Enter percentage (0-100)"
@@ -387,7 +388,7 @@ export function MaModalStep3({
               )}
             </div>
             <div>
-              <Label>Maximum Profit Target</Label>
+              <Label>Maximum Profit Target (%)</Label>
               <Input
                 type="number"
                 placeholder="Enter percentage (0-100)"
@@ -489,12 +490,12 @@ export function MaModalStep3({
             onCheckedChange={(checked) => setValue("squareOffBy310", !!checked)}
           />
           <Label htmlFor="squareOffBy310" className="cursor-pointer">
-            Square off all positions by 3:10 PM
+            Square off all positions by 3:10 PM to avoid broker penalty charges.
           </Label>
         </div>
       </div>
     </div>
-  );
+  ); 
 }
 
 export function MaModalStep4({

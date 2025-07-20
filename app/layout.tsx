@@ -12,7 +12,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Pro Algo Trader - Trading Strategy App",
+  title: "Pro AlgoMaps - Trading Strategy App",
   description:
     "Advanced trading strategies with real-time market data and Fyers integration",
 };

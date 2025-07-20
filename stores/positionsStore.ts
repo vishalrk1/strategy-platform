@@ -32,9 +32,7 @@ export const usePositionsStore = create<PositionsState>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const fyersStore = useFyersStore.getState();
-      if (!fyersStore.isAuthorized || !fyersStore.accessToken) {
-        throw new Error("User not authorized. Please login first.");
-      }
+
       const response = await fetch("https://api-t1.fyers.in/api/v3/positions", {
         method: "GET",
         headers: {

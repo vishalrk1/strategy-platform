@@ -1,6 +1,6 @@
 import { ObjectId } from "mongodb";
 
-export type DataProvider = "fyers" | "zerodha";
+export type DataProvider = "fyers" | "zerodha" | undefined;
 
 // Authentication types
 export interface LoginCredentials {

@@ -59,7 +59,7 @@ export function verifyToken(token: string): Partial<User> | null {
 export function userToAuthUser(user: User): User {
   return {
     ...user,
-    dataProvider: user.dataProvider || "fyers",
+    dataProvider: user.dataProvider || undefined,
     fyersClientId: user.fyersClientId || "",
     fyersSecretKey: user.fyersSecretKey || "",
     fyersAuthCode: user.fyersAuthCode || "",

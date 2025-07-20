@@ -81,7 +81,7 @@ const Navbar = () => {
           href="/"
           className="max-w-screen-xl font-semibold text-xl text-white-a12 hover:text-white-a12 md:text-2xl"
         >
-          Pro Algo Trader
+          Pro AlgoMaps
         </Link>
         <div
           className={`hidden items-center md:flex ${

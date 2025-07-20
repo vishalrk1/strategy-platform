@@ -13,7 +13,7 @@ export default function Header() {
       <nav className="flex items-center justify-between p-4 bg-sidebar shadow-sm rounded-xl">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold">
-            Pro Algo Trader
+            Pro AlgoMaps
           </h1>
         </div>
         <div className="animate-pulse">
@@ -27,7 +27,7 @@ export default function Header() {
     <nav className="flex items-center justify-between p-4 bg-sidebar shadow-sm rounded-xl">
       <div className="flex items-center gap-4">
         <h1 className="text-xl font-bold cursor-pointer">
-          <Link href="/">Pro Algo Trader</Link>
+          <Link href="/">Pro AlgoMaps</Link>
         </h1>
       </div>
       <div className="flex items-center gap-4">

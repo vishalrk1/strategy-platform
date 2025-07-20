@@ -72,7 +72,7 @@ export default function MAStrategyModal() {
       termsAccepted: false,
       riskDisclosure: false,
     },
-    mode: "onChange",
+    mode: "all",
   });
 
   // Function to measure content height
