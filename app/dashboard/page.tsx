@@ -27,7 +27,9 @@ export default function Dashboard() {
     overall: overallPositions,
     isLoading: isPositionsLoading,
   } = usePositionsStore();
-  const isFundsLoading = fyersStore.fund_limit.length === 0; // crude loading state for funds
+  // Show loading only if funds are loading AND user has a valid access token
+  const isFundsLoading =
+    fyersStore.fund_limit.length === 0 && !!(user && user.fyersAccessToken);
 
   useEffect(() => {
     fyersStore.initialize();
@@ -127,38 +129,88 @@ export default function Dashboard() {
         <Card className="mb-6 border-none shadow-xs bg-accent/30 p-0 gap-0">
           <CardHeader className="flex items-center bg-gradient-to-r from-green-300/20 to-accent/30 m-3 rounded-lg">
             {isFundsLoading || isPositionsLoading ? (
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center p-2">
-                  {/* Total P&L */}
-                  <div className="flex flex-col items-start min-w-[120px]">
-                    <Skeleton className="h-5 w-24 mb-1" />
-                    <Skeleton className="h-6 w-32" />
-                  </div>
-                  {/* Realised/Unrealised P&L */}
-                  <div className="ml-4 md:ml-16 flex items-center justify-around space-x-6 h-full">
-                    {/* Realised */}
-                    <div className="flex flex-col items-center justify-center min-w-[120px]">
-                      <Skeleton className="h-5 w-20 mb-1" />
-                      <Skeleton className="h-6 w-24" />
+              user && !user.fyersAccessToken ? (
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center p-2">
+                    <div className="flex flex-col items-start min-w-[120px]">
+                      <span className="text-muted-foreground text-lg">
+                        Total P&L
+                      </span>
+                      <span className="text-lg text-gray-400">
+                        Connect your broker to view
+                      </span>
                     </div>
-                    <Separator
-                      orientation="vertical"
-                      className="bg-white/50 dark:bg-white/20 border-2 h-full"
-                    />
-                    {/* Unrealised */}
-                    <div className="flex flex-col items-center justify-center min-w-[120px]">
+                    <div className="ml-4 md:ml-16 flex items-center justify-around space-x-6 h-full">
+                      <div className="flex flex-col items-center justify-center min-w-[120px]">
+                        <span className="text-muted-foreground text-lg">
+                          Realised P&L
+                        </span>
+                        <span className="text-lg text-gray-400">
+                          Connect your broker
+                        </span>
+                      </div>
+                      <Separator
+                        orientation="vertical"
+                        className="bg-white/50 dark:bg-white/20 border-2 h-full"
+                      />
+                      <div className="flex flex-col items-center justify-center min-w-[120px]">
+                        <span className="text-muted-foreground text-lg">
+                          Unrealised P&L
+                        </span>
+                        <span className="text-lg text-gray-400">
+                          Connect your broker
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-start space-y-2">
+                    <div className="flex items-center space-x-2 mr-8">
+                      <span className="text-muted-foreground text-sm">
+                        Funds Available:
+                      </span>
+                      <span className="font-semibold text-sm text-gray-400">
+                        Connect your broker
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1 flex overflow-hidden">
+                      <div className="bg-gray-400 h-1 w-full"></div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center p-2">
+                    {/* Total P&L */}
+                    <div className="flex flex-col items-start min-w-[120px]">
                       <Skeleton className="h-5 w-24 mb-1" />
-                      <Skeleton className="h-6 w-24" />
+                      <Skeleton className="h-6 w-32" />
+                    </div>
+                    {/* Realised/Unrealised P&L */}
+                    <div className="ml-4 md:ml-16 flex items-center justify-around space-x-6 h-full">
+                      {/* Realised */}
+                      <div className="flex flex-col items-center justify-center min-w-[120px]">
+                        <Skeleton className="h-5 w-20 mb-1" />
+                        <Skeleton className="h-6 w-24" />
+                      </div>
+                      <Separator
+                        orientation="vertical"
+                        className="bg-white/50 dark:bg-white/20 border-2 h-full"
+                      />
+                      {/* Unrealised */}
+                      <div className="flex flex-col items-center justify-center min-w-[120px]">
+                        <Skeleton className="h-5 w-24 mb-1" />
+                        <Skeleton className="h-6 w-24" />
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex flex-col items-start space-y-2">
-                  <div className="flex items-center space-x-2 mr-8">
-                    <Skeleton className="h-5 w-32" />
+                  <div className="flex flex-col items-start space-y-2">
+                    <div className="flex items-center space-x-2 mr-8">
+                      <Skeleton className="h-5 w-32" />
+                    </div>
+                    <Skeleton className="h-2 w-40 rounded-full" />
                   </div>
-                  <Skeleton className="h-2 w-40 rounded-full" />
                 </div>
-              </div>
+              )
             ) : (
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center p-2">
